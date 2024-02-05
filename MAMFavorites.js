@@ -54,10 +54,16 @@ if ( !(sessionStorage.menuItems === undefined) ) {
     sessionStorage.removeItem('menuItems');
 }
 
-// Show the raw JSON of the favorites
+// Download the raw JSON of the favorites
 if (!(sessionStorage.showRaw === undefined) ) {
-    alert(JSON.stringify(GM_getValue("favorites")));
-    console.log(JSON.stringify(GM_getValue("favorites")));
+    var rawJSON = JSON.stringify(GM_getValue("favorites"), null, 4);
+    var blob = new Blob([rawJSON], {type: "text/plain;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.download = "MAMFavorites.json";
+    a.innerHTML = "Download";
+    a.href = url;
+    a.click();
     sessionStorage.removeItem('showRaw');
 }
 
