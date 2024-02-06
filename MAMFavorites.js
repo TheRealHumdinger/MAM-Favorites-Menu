@@ -15,7 +15,7 @@
 // ==/UserScript==
 // Icon Image by https://www.freepik.com/free-vector/flat-mice-collection-with-different-poses_1593656.htm#query=cute%20mouse&position=0&from_view=keyword&track=ais
 
-// Get settings from GM storage
+(function() {// Get settings from GM storage
 var debug = GM_getValue("MAMFaves_debug", false);
 var menuTitle = GM_getValue("MAMFaves_menuTitle", "Favorites");
 var menuItems = GM_getValue("MAMFaves_favorites", { "Howto use MAM Favorites": "https://www.myanonamouse.net/f/t/70066"});
@@ -565,4 +565,4 @@ if (document.title.includes("Preferences")) {
   newTD.style = "display:inline-block";
   newTD.innerHTML = '<a href="/preferences/index.php?view=faves">Favorites</a>';
   menuTable.insertBefore(newTD, menuTable.children[8]);
-}
+})();
