@@ -1,17 +1,17 @@
 // ==UserScript==
 // @name MAM Favorites Menu
-// @namespace Humdinger
+// @namespace https://github.com/TheRealHumdinger
 // @author Humdinger
-// @description Adds menu to top of screen with custom favorites
+// @description Adds menu to top of screen for custom favorites
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.1.2
+// @version 0.1.3
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
 // @license MIT
-// @homepage     https://www.myanonamouse.net
+// @homepage     https://github.com/TheRealHumdinger/MAM-Favorites-Menu
 // ==/UserScript==
 // Icon Image by https://www.freepik.com/free-vector/flat-mice-collection-with-different-poses_1593656.htm#query=cute%20mouse&position=0&from_view=keyword&track=ais
 
@@ -456,7 +456,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
     // This is the content shown for each favorite
     // It includes the remove button and the link to the favorite
-    newLi.innerHTML = "<button onclick='remFavorite(\"" + key + "\")' style='border-radius:4px;margin-right:20px;'>Rem</button><a id=\"" + key + "_link\" name='bmAchors' href='https://www.myanonamouse.net" + GM_getValue("MAMFaves_favorites")[key] + "'>" + key + "</a>";
+    newLi.innerHTML = "<button onclick='remFavorite(\"" + key + "\")' style='border-radius:4px;margin-right:20px;'>Rem</button><span style='margin-right:10px'>☰</span><a id=\"" + key + "_link\" name='bmAchors' href='https://www.myanonamouse.net" + GM_getValue("MAMFaves_favorites")[key] + "'>" + key + "</a>";
 
     // Append the list item to the unordered list
     newElement.appendChild(newLi);
