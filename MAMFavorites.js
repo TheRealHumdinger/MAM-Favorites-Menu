@@ -445,10 +445,12 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   deleteButton.innerHTML = "Delete Favorites";
   deleteButton.onclick = function() {
       var deleteFaves = confirm("Are you sure you want to delete all your favorites?");
-      var deleteFaves = confirm("Are you really, really sure? Have you backed up your favorites first?");
       if (deleteFaves) {
-        GM_deleteValue('MAMFaves_favorites');
-        window.location.reload();
+        deleteFaves = confirm("Are you really, really sure? Have you backed up your favorites first?");
+        if (deleteFaves) {
+          GM_deleteValue('MAMFaves_favorites');
+          window.location.reload();
+        }
       }
   };
   favesTd2.appendChild(deleteButton);
