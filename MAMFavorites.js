@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            MAM-Favorites-Menu
 // @namespace       https://github.com/TheRealHumdinger
-// @version         0.1.3
+// @version         1.0.0
 // @description     Adds menu to top of screen for custom favorites
 // @author          Humdinger
 // @run-at          document-finish
