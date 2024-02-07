@@ -1,21 +1,21 @@
 // ==UserScript==
-// @name            MAM-Favorites-Menu
-// @namespace       https://github.com/TheRealHumdinger
-// @version         1.0.0
-// @description     Adds menu to top of screen for custom favorites
-// @author          Humdinger
-// @run-at          document-finish
-// @match           https://www.myanonamouse.net/*
-// @icon            https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
-// @grant           GM_setValue
-// @grant           GM_getValue
-// @grant           GM_deleteValue
-// @license         MIT
-// @homepage        https://github.com/TheRealHumdinger/MAM-Favorites-Menu
+// @name MAM Favorites Menu
+// @namespace https://github.com/TheRealHumdinger
+// @author Humdinger
+// @description Adds menu to top of screen for custom favorites
+// @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
+// @run-at       document-finish
+// @match        https://www.myanonamouse.net/*
+// @version 0.1.3
+// @grant        GM_setValue
+// @grant        GM_getValue
+// @grant        GM_deleteValue
+// @license MIT
+// @homepage     https://github.com/TheRealHumdinger/MAM-Favorites-Menu
 // ==/UserScript==
 // Icon Image by https://www.freepik.com/free-vector/flat-mice-collection-with-different-poses_1593656.htm#query=cute%20mouse&position=0&from_view=keyword&track=ais
 
-(function() {// Get settings from GM storage
+// Get settings from GM storage
 var debug = GM_getValue("MAMFaves_debug", false);
 var menuTitle = GM_getValue("MAMFaves_menuTitle", "Favorites");
 var menuItems = GM_getValue("MAMFaves_favorites", { "Howto use MAM Favorites": "https://www.myanonamouse.net/f/t/70066"});
@@ -565,4 +565,4 @@ if (document.title.includes("Preferences")) {
   newTD.style = "display:inline-block";
   newTD.innerHTML = '<a href="/preferences/index.php?view=faves">Favorites</a>';
   menuTable.insertBefore(newTD, menuTable.children[8]);
-})();
+}
