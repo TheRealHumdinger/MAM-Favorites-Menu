@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.1.3
+// @version 0.2.0
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -101,6 +101,7 @@ newMenuElement.innerHTML = '<a tabindex="0" id="favMenu" role="menuitem" aria-ha
 // Create the unordered list for the menu items
 // This one is hidden by default and will show the menu when it is hovered over
 var newMenuUl = document.createElement('ul');
+newMenuUl.id = "menuFaves";
 newMenuUl.role = "menu";
 newMenuUl.ariaLabel = "Fave Links";
 newMenuUl.classList = "hidden";
@@ -133,8 +134,8 @@ newMenuUl.appendChild(addFaveMenuElement);
 // Now time for the Manage Faves menu item (a bit simpler)
 // It's just a link straight to the Favorites preferences page using the view=faves query string
 var manageFavesMenuElement = document.createElement('li');
-manageFavesMenuElement.role = "menuitem";
-manageFavesMenuElement.innerHTML = '<a href="https://www.myanonamouse.net/preferences/index.php?view=faves" id="manageFaves">Manage</a>';
+manageFavesMenuElement.role = "none";
+manageFavesMenuElement.innerHTML = '<a role="menuitem" href="https://www.myanonamouse.net/preferences/index.php?view=faves" id="manageFaves">Manage</a>';
 newMenuUl.appendChild(manageFavesMenuElement);
 
 // Add a separator for asthetics
@@ -144,27 +145,18 @@ newMenuUl.appendChild(document.createElement('hr'));
 
 // Add the menu items from the GM storage (grabbed at the beginning of the script)
 // Loop through the menu items to add each as a list item
-// I am working on a way to add submenus but it's not ready yet
+// Submenus are added as list items with a nested unordered list
 for (const key in menuItems) {
   // This checks if the menu item is an object (which would mean it's a submenu)
   if ( typeof menuItems[key] === 'object') {
     var newSubMenu = document.createElement('li');
     newSubMenu.role = "none";
-    newSubMenu.classList = "mmFG";
-    newSubMenu.innerHTML = `<a tabindex="0" id="' + key + '" aria-haspopup="true">` + key + `
-    <svg xmlns="http://www.w3.org/2000/svg"
-    class="right"
-    width="9"
-    height="12"
-    style="fill:#fff;"
-    viewBox="0 0 9 12">
- <polygon points="0 1, 0 11, 8 6"></polygon>
-</svg>
-</a>`;
+    newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false">' + key + ' →</a>';
 
     var newSubMenuUl = document.createElement('ul');
     newSubMenuUl.role = "menu";
     newSubMenuUl.ariaLabel = key;
+    newSubMenuUl.style = "position: float;left: 100%;top: 0;";
     newSubMenuUl.classList = "hidden";
 
     // Loop through the submenu items and add them to the submenu
@@ -404,7 +396,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   var menuTitleLabel = document.createElement('label');
   menuTitleLabel.htmlFor = "menuTitle";
   menuTitleLabel.innerHTML = "Menu Title ";
- 
+
   // Append the custom menu title input and label to the preferences table cell along with a line break
   prefsTd2.appendChild(menuTitleLabel);
   prefsTd2.appendChild(menuTitleInput);
