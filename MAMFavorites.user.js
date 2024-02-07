@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.2.0
+// @version 0.2.5
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -91,6 +91,44 @@ if (!(sessionStorage.deleteFaves === undefined)) {
     sessionStorage.removeItem('deleteFaves');
 }
 
+// Function to log messages to the console if the debug setting is true
+function log(message) {
+  if (debug == "true") {
+    console.log(logPrefix + message);
+  }
+}
+
+// Create menu items and submenus/items
+// Called recursively to create submenus and their items
+function addMenuItems(parent, itemList) {
+  for (const key in itemList) {
+    if ( typeof itemList[key] === 'object') {
+      var newSubMenu = document.createElement('li');
+      newSubMenu.role = "none";
+      newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false">' + key + ' →</a>';
+
+      var newSubMenuUl = document.createElement('ul');
+      newSubMenuUl.role = "menu";
+      newSubMenuUl.ariaLabel = key;
+      newSubMenuUl.style = "position: float;left: 100%;top: 0;";
+      newSubMenuUl.classList = "hidden";
+
+      // Recursively call addMenuItems to loop through the submenu items and add them to the submenu
+      addMenuItems(newSubMenuUl, itemList[key]);
+  
+      newSubMenu.appendChild(newSubMenuUl);
+      parent.appendChild(newSubMenu);
+    } else {
+      // If the menu item is not an object then it's a regular menu item
+      // So we add it as a list item
+      var newMenuItem = document.createElement('li');
+      newMenuItem.role = "none";
+      newMenuItem.innerHTML = '<a role="menuitem" href="' + itemList[key] + '">' + key + '</a>';
+      parent.appendChild(newMenuItem);
+    }
+  }
+}
+
 // Top list item (li) for the menu
 var newMenuElement = document.createElement('li');
 newMenuElement.classList = "mmFG";
@@ -146,38 +184,7 @@ newMenuUl.appendChild(document.createElement('hr'));
 // Add the menu items from the GM storage (grabbed at the beginning of the script)
 // Loop through the menu items to add each as a list item
 // Submenus are added as list items with a nested unordered list
-for (const key in menuItems) {
-  // This checks if the menu item is an object (which would mean it's a submenu)
-  if ( typeof menuItems[key] === 'object') {
-    var newSubMenu = document.createElement('li');
-    newSubMenu.role = "none";
-    newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false">' + key + ' →</a>';
-
-    var newSubMenuUl = document.createElement('ul');
-    newSubMenuUl.role = "menu";
-    newSubMenuUl.ariaLabel = key;
-    newSubMenuUl.style = "position: float;left: 100%;top: 0;";
-    newSubMenuUl.classList = "hidden";
-
-    // Loop through the submenu items and add them to the submenu
-    for (const subKey in menuItems[key]) {
-      var newSubMenuItem = document.createElement('li');
-      newSubMenuItem.role = "none";
-      newSubMenuItem.innerHTML = '<a role="menuitem" tabindex="0" href="' + menuItems[key][subKey] + '">' + subKey + '</a>';
-      newSubMenuUl.appendChild(newSubMenuItem);
-    }
-
-    newSubMenu.appendChild(newSubMenuUl);
-    newMenuUl.appendChild(newSubMenu);
-  } else {
-    // If the menu item is not an object then it's a regular menu item
-    // So we add it as a list item
-    var newMenuItem = document.createElement('li');
-    newMenuItem.role = "none";
-    newMenuItem.innerHTML = '<a role="menuitem" href="' + menuItems[key] + '">' + key + '</a>';
-    newMenuUl.appendChild(newMenuItem);
-  }
-}
+addMenuItems(newMenuUl, menuItems);
 
 // Append the unordered list to the menu element
 newMenuElement.appendChild(newMenuUl);
