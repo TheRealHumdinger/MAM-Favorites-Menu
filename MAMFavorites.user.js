@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.3.0
+// @version 0.3.1
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -515,6 +515,8 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         var newLabel = document.createElement('label');
         newLabel.htmlFor = key;
         newLabel.innerHTML = key + " →";
+        newLabel.classList = "bmAnchors";
+        newLabel.setAttribute('jsonpath', keyItem);
         newSubMenu.appendChild(newLabel);
 
         // newSubMenu.draggable = "true";
@@ -609,9 +611,10 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
         var newA = document.createElement('a');
         // newA.id = keyItem + "_link";
-        newA.classList = "bmAchors";
+        newA.classList = "bmAnchors";
         newA.href = "https://www.myanonamouse.net" + itemList[key];
         newA.innerHTML = key;
+        newA.setAttribute('jsonpath', keyItem);
         newLi.appendChild(newA);
         //newLi.innerHTML += "<span style='margin-right:10px'>☰</span><a id=\"" + key + "_link\" name='bmAchors' href='https://www.myanonamouse.net" + itemList[key] + "'>" + key + "</a>";
 
@@ -662,21 +665,39 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   // This is the onclick function for the update button
   // Handles created sessionStorage variables and reloads the page
   updateButton.onclick = function() {
-    var allElements = document.getElementsByName('bmAchors');
+    var allElements = document.getElementsByClassName('bmAnchors');
     var newMenuItems = {};
 
+    curMenuItems = newMenuItems;
+    curFolder = "";
     for (var i = 0; i < allElements.length; i++) {
       var bmName = allElements[i].innerHTML;
-      var bmLink = allElements[i].href;
-      bmLink = bmLink.substring(28);
-      newMenuItems[bmName] = bmLink;
+
+      if (bmName.includes("→")) {
+        bmName = bmName.substring(0, bmName.length - 2);
+        newMenuItems[bmName] = {};
+        curMenuItems = newMenuItems[bmName];
+        curFolder = bmName;
+      } else {
+        var bmLink = allElements[i].href;
+        if (bmLink.includes("https://www.myanonamouse.net")) {
+          bmLink = bmLink.substring(28);
+        }
+        if (!(allElements[i].getAttribute('jsonpath').includes(curFolder))) {
+          curMenuItems = newMenuItems;
+        }
+        curMenuItems[bmName] = bmLink;
+      }
+      // bmLink = bmLink.substring(28);
+      // newMenuItems[bmName] = bmLink;
     }
+    // console.log(newMenuItems);
 
-    console.log(logPrefix + "The debug setting will be changed to " + document.getElementById('debugCB').checked);
+    GM_setValue('MAMFaves_favorites', newMenuItems);
 
-    sessionStorage.setItem('menuItems', JSON.stringify(newMenuItems));
-    sessionStorage.setItem('debug', document.getElementById('debugCB').checked);
-    sessionStorage.setItem('menuTitle', document.getElementById('menuTitle').value);
+    // sessionStorage.setItem('menuItems', JSON.stringify(newMenuItems));
+    // sessionStorage.setItem('debug', document.getElementById('debugCB').checked);
+    // sessionStorage.setItem('menuTitle', document.getElementById('menuTitle').value);
     window.location.reload();
   };
   // Append the update button to the favorites table cell
