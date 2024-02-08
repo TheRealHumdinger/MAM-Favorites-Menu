@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.2.5
+// @version 0.3.0
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -20,13 +20,21 @@ var debug = GM_getValue("MAMFaves_debug", false);
 var menuTitle = GM_getValue("MAMFaves_menuTitle", "Favorites");
 var menuItems = GM_getValue("MAMFaves_favorites", { "Howto use MAM Favorites": "https://www.myanonamouse.net/f/t/70066"});
 var logPrefix = "[MAMFaveMenu] ";
-console.log(logPrefix + "Debug value from GM is " + debug);
 
+// Function to log messages to the console if the debug setting is true
+function log(message) {
+  if (debug) {
+    console.log(logPrefix + message);
+  }
+}
+
+//#region Actions from sessionStorage
 // Check if the addFave sessionStorage variable is set and add the favorite to the menu
 // There is an asumption that the user has already been prompted for the name of the bookmark and provided it
 if ( !(sessionStorage.addFave === undefined) ) {
     var bmName = sessionStorage.getItem('newBMName');
     var bmUrl = sessionStorage.getItem('bookmark');
+    log("Adding new favorite, " + bmName + ", to the menu");
 
     menuItems[bmName] = bmUrl;
     GM_setValue('MAMFaves_favorites', menuItems);
@@ -38,8 +46,12 @@ if ( !(sessionStorage.addFave === undefined) ) {
 // Check if the remove favorite sessionStorage variable is set and remove the favorite from the menu
 if ( !(sessionStorage.remFave === undefined) ) {
     bmName = sessionStorage.getItem('bmName');
-    delete menuItems[bmName];
-    GM_setValue('MAMFaves_favorites', menuItems);
+    log("Removing favorite, " + bmName + ", from the menu");
+    // bmNameArr = bmName.split("|");
+    // bmNameArr.pop();
+
+    // delete menuItems[bmName];
+    // GM_setValue('MAMFaves_favorites', menuItems);
     sessionStorage.removeItem('remFave');
     sessionStorage.removeItem('bmName');
 }
@@ -50,6 +62,7 @@ if ( !(sessionStorage.remFave === undefined) ) {
 // This update is triggered from the Update and JSON import buttons on the preferences page
 if ( !(sessionStorage.menuItems === undefined) ) {
     try {
+      log("Updating favorites from sessionStorage");
       GM_setValue("MAMFaves_favorites", JSON.parse(sessionStorage.menuItems));
       menuItems = JSON.parse(sessionStorage.menuItems);
     } catch {
@@ -58,13 +71,14 @@ if ( !(sessionStorage.menuItems === undefined) ) {
     sessionStorage.removeItem('menuItems');
 
     if (!(sessionStorage.debug === undefined)) {
-      console.log(logPrefix + "Debugging is now " + sessionStorage.debug);
-      GM_setValue("MAMFaves_debug", sessionStorage.debug);
-      debug = sessionStorage.debug;
+      log("Updating debug setting from sessionStorage to " + sessionStorage.debug);
+      GM_setValue("MAMFaves_debug", (sessionStorage.debug == "true"));
+      debug = (sessionStorage.debug == "true");
       sessionStorage.removeItem('debug');
     }
 
     if (!(sessionStorage.menuTitle === undefined)) {
+      log("Updating menu title from sessionStorage to " + sessionStorage.menuTitle);
       GM_setValue("MAMFaves_menuTitle", sessionStorage.menuTitle);
       menuTitle = sessionStorage.menuTitle;
       sessionStorage.removeItem('menuTitle');
@@ -90,14 +104,9 @@ if (!(sessionStorage.deleteFaves === undefined)) {
     GM_deleteValue('MAMFaves_favorites');
     sessionStorage.removeItem('deleteFaves');
 }
+//#endregion Actions from sessionStorage
 
-// Function to log messages to the console if the debug setting is true
-function log(message) {
-  if (debug == "true") {
-    console.log(logPrefix + message);
-  }
-}
-
+//#region Add new menu
 // Create menu items and submenus/items
 // Called recursively to create submenus and their items
 function addMenuItems(parent, itemList) {
@@ -158,13 +167,15 @@ addFaveAnchor.id = "addFave";
 addFaveAnchor.innerHTML = "Add Fave";
 addFaveAnchor.onclick = function() {
   var newBMName = prompt('Give a name for the bookmark');
-  var bookmark = window.location.pathname + window.location.search;
+  if (!(newBMName === null) && !(newBMName === "")) {
+    var bookmark = window.location.pathname + window.location.search;
 
-  sessionStorage.setItem('addFave', true);
-  sessionStorage.setItem('newBMName', newBMName);
-  sessionStorage.setItem('bookmark', bookmark);
-
-  window.location.reload();
+    sessionStorage.setItem('addFave', true);
+    sessionStorage.setItem('newBMName', newBMName);
+    sessionStorage.setItem('bookmark', bookmark);
+  
+    window.location.reload();
+  }
 };
 addFaveMenuElement.appendChild(addFaveAnchor);
 newMenuUl.appendChild(addFaveMenuElement);
@@ -192,11 +203,14 @@ newMenuElement.appendChild(newMenuUl);
 // Append it to the menu div
 document.getElementById("menu").appendChild(newMenuElement);
 // End of adding new menu
+//#endregion Add new menu
 
 // Inject the remove favorites script needed for the preferences page (only)
 // It also includes the event listener scripts for handling the drag and drop functionality
 // As well as the page/tab for managing the favorites
 if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view=faves" ) {
+//#region Injected Script and Styles
+  document.title = document.title.replace("general", "MAM Favorites");
   // Grab the head section of the page to add the scripts and styles
   var headSec = document.getElementsByTagName("head")[0];
   // Add the script to remove the favorite from the menu
@@ -209,10 +223,50 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     }`;
   headSec.appendChild(newScript);
 
-  let dragSrcEl = null;
+  // Add the styles used below
+  var newStyle = document.createElement('style');
+  newStyle.innerHTML = `
+    .sortable-list {
+      list-style-type: none;
+      padding: 0;
+      text-align: left;
+    }
+    .sortable-item {
+      cursor: grab;
+      text-align: left;
+    }
+    .sortable-item.over {
+      background-color: #333;
+    }
+    .sortable-item.dragging {
+      opacity: 0.5;
+    }
+    .bullets {
+      margin-left: 30px;
+    }
+    button, input {
+      border-radius: 4px;
+    }`;
+  headSec.appendChild(newStyle);
 
+  function gmSet(name, value) {
+    GM_setValue(name, value);
+  }
+
+  function gmGet(name) {
+    return GM_getValue(name);
+  }
+
+  function gmDelete(name) {
+    GM_deleteValue(name);
+  }
+//#endregion Injected Script and Styles
+
+//#region Drag and Drop Event Listeners
   // Event listeners for the drag and drop functionality
   // This one is for the drag start event
+  let dragSrcEl = null;
+
   function handleDragStart(e) {
     dragSrcEl = this;
     e.dataTransfer.effectAllowed = 'move';
@@ -289,42 +343,17 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       item.classList.remove('over', 'dragging');
     });
   }
+//#endregion Drag and Drop Event Listeners
 
-  // Add the styles used below
-  var newStyle = document.createElement('style');
-  newStyle.innerHTML = `
-    .sortable-list {
-      list-style-type: none;
-      padding: 0;
-      text-align: left;
-    }
-    .sortable-item {
-      cursor: grab;
-      text-align: left;
-    }
-    .sortable-item.over {
-      background-color: #333;
-    }
-    .sortable-item.dragging {
-      opacity: 0.5;
-    }
-    .bullets {
-      margin-left: 30px;
-    }
-    button, input {
-      border-radius: 4px;
-    }`;
-  headSec.appendChild(newStyle);
-
+//#region Manage Favorites Page
   // Create the page for managing the favorites
   // This is the page that will be displayed when the user clicks the "Favorites" link in the menu
   // It will display the favorites and allow the user to add, remove, reorder, and export the favorites
   // It will also allow the user to import the raw JSON of the favorites and delete all the favorites
   // It will also allow the user to change the debug setting and the menu title
   // First get the header and remove the next sibling (which is the General Preferences)
-  var storedMenuItems = GM_getValue("MAMFaves_favorites");
   var myHeader = document.getElementsByTagName("h1")[0];
-  myHeader.innerHTML = "My MAM Favorites";
+  myHeader.innerHTML = "MAM Favorites";
   var myParent = myHeader.parentNode;
   myParent.removeChild(myHeader.nextSibling);
 
@@ -335,6 +364,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
   // Create the main table body and first row
   var mainTbody = document.createElement('tbody');
+//#region First Table Row
   var mainTr = document.createElement('tr');
 
   // Create the first table cell for the main table
@@ -356,7 +386,9 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   mainTr.appendChild(mainTd);
   mainTbody.appendChild(mainTr);
   mainTable.appendChild(mainTbody);
+//#endregion First Table Row
 
+//#region Second Table Row - Preferences
   // Create the second table row for the main table
   var prefsTr = document.createElement('tr');
 
@@ -379,7 +411,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   // Set it to checked if the debug setting is true
   // The debug setting is stored as a string so it needs to be compared to a string
   // I will probably change this to a boolean in the future but it's not a priority right now
-  debugCB.checked = (debug == "true");
+  debugCB.checked = debug;
 
   // Create the label for the debug checkbox
   var debugLabel = document.createElement('label');
@@ -413,6 +445,181 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   prefsTr.appendChild(prefsTd1);
   prefsTr.appendChild(prefsTd2);
   mainTbody.appendChild(prefsTr);
+//#endregion Second Table Row - Preferences
+
+//#region Third Table Row - Favorites
+  // Function to add a favorite items and containing folders to the page
+  function addFavoriteItem(parent, parentItem, itemList) {
+    for (const key in itemList) {
+      var keyItem = "";
+      if (parentItem.length > 0) {
+        keyItem = parentItem + "." + key;
+      } else {
+        keyItem = key;
+      }
+      if ( typeof itemList[key] === 'object') {
+        var newSubMenu = document.createElement('li');
+        newSubMenu.classList = "sortable-item";
+        newSubMenu.id = keyItem;
+
+        var deleteButton = document.createElement('button');
+        deleteButton.innerHTML = "Delete";
+        deleteButton.onclick = function() {
+          var jsonpath = this.getAttribute('jsonpath').split('.');
+          lastOne = menuItems;
+          for (var i = 0; i < jsonpath.length; i++) {
+              if (i == jsonpath.length - 1) {
+                  delete lastOne[jsonpath[i]];
+                  console.log(lastOne);
+              }
+              var lastOne = lastOne[jsonpath[i]];
+          }
+          gmSet('MAMFaves_favorites', menuItems);
+          window.location.reload();
+        };
+        deleteButton.style = "border-radius:4px;margin-right:5px;";
+        deleteButton.setAttribute('jsonpath', keyItem);
+        newSubMenu.appendChild(deleteButton);
+        
+        var renameButton = document.createElement('button');
+        renameButton.innerHTML = "Rename";
+        renameButton.onclick = function() {
+          var new_key = prompt("Enter the new name for the folder", key);
+          var jsonpath = this.getAttribute('jsonpath').split('.');
+          lastOne = menuItems;
+          for (var i = 0; i < jsonpath.length; i++) {
+            console.log("Loop " + i);
+            if (i == jsonpath.length - 1) {
+              if (jsonpath[i] !== new_key) {
+                Object.defineProperty(lastOne, new_key,
+                    Object.getOwnPropertyDescriptor(lastOne, jsonpath[i]));
+                delete lastOne[jsonpath[i]];
+                gmSet('MAMFaves_favorites', menuItems);
+                window.location.reload();
+              }
+            }
+            var lastOne = lastOne[jsonpath[i]];
+            console.log(lastOne);
+          }
+        };
+        
+        renameButton.style = "border-radius:4px;margin-right:5px;";
+        renameButton.setAttribute('jsonpath', keyItem);
+        newSubMenu.appendChild(renameButton);
+
+        var newSpan = document.createElement('span');
+        newSpan.style = "margin-right:10px";
+        newSpan.innerHTML = "☰";
+        newSubMenu.appendChild(newSpan);
+
+        var newLabel = document.createElement('label');
+        newLabel.htmlFor = key;
+        newLabel.innerHTML = key + " →";
+        newSubMenu.appendChild(newLabel);
+
+        // newSubMenu.draggable = "true";
+        // newSubMenu.addEventListener('dragstart', handleDragStart, false);
+        // newSubMenu.addEventListener('dragover', handleDragOver, false);
+        // newSubMenu.addEventListener('dragenter', handleDragEnter, false);
+        // newSubMenu.addEventListener('dragleave', handleDragLeave, false);
+        // newSubMenu.addEventListener('drop', handleDrop, false);
+        // newSubMenu.addEventListener('dragend', handleDragEnd, false);
+
+        var newSubMenuUl = document.createElement('ul');
+        newSubMenuUl.id = key + "_ul";
+        // newSubMenuUl.draggable = "true";
+        // newSubMenuUl.classList = "sortable-list";
+        // newSubMenuUl.addEventListener('dragstart', handleDragStart, false);
+        // newSubMenuUl.addEventListener('dragover', handleDragOver, false);
+        // newSubMenuUl.addEventListener('dragenter', handleDragEnter, false);
+        // newSubMenuUl.addEventListener('dragleave', handleDragLeave, false);
+        // newSubMenuUl.addEventListener('drop', handleDrop, false);
+        // newSubMenuUl.addEventListener('dragend', handleDragEnd, false);
+        // newSubMenuUl.innerHTML = "<button onclick='remFavorite(\"" + key + "\")' style='border-radius:4px;margin-right:20px;'>Rem</button><span style='margin-right:10px'>☰</span><label for='" + key + "'>" + key + " →</label>";
+        
+        // var newSubMenuLabel = document.createElement('label');
+        // newSubMenuLabel.htmlFor = key;
+        // newSubMenuLabel.innerHTML = key;
+        // newSubMenu.appendChild(newSubMenuLabel);
+        addFavoriteItem(newSubMenuUl, keyItem, itemList[key]);
+        newSubMenu.appendChild(newSubMenuUl);
+        parent.appendChild(newSubMenu);
+      } else {
+        var newLi = document.createElement('li');
+        newLi.classList = "sortable-item";
+        newLi.id = keyItem;
+        newLi.draggable = "true";
+        newLi.addEventListener('dragstart', handleDragStart, false);
+        newLi.addEventListener('dragover', handleDragOver, false);
+        newLi.addEventListener('dragenter', handleDragEnter, false);
+        newLi.addEventListener('dragleave', handleDragLeave, false);
+        newLi.addEventListener('drop', handleDrop, false);
+        newLi.addEventListener('dragend', handleDragEnd, false);
+
+        // log(logPrefix + "Adding " + key + " to the list");
+        // log(logPrefix + "The parent is " + parent.id);
+
+        var deleteButton = document.createElement('button');
+        deleteButton.innerHTML = "Del";
+        deleteButton.onclick = function() {
+          var jsonpath = this.getAttribute('jsonpath').split('.');
+          lastOne = menuItems;
+          for (var i = 0; i < jsonpath.length; i++) {
+              if (i == jsonpath.length - 1) {
+                  delete lastOne[jsonpath[i]];
+              }
+              var lastOne = lastOne[jsonpath[i]];
+          }
+          gmSet('MAMFaves_favorites', menuItems);
+          window.location.reload();
+        };
+        deleteButton.style = "border-radius:4px;margin-right:5px;";
+        deleteButton.setAttribute('jsonpath', keyItem);
+        newLi.appendChild(deleteButton);
+        
+        var renameButton = document.createElement('button');
+        renameButton.innerHTML = "Ren";
+        renameButton.onclick = function() {
+          var new_key = prompt("Enter the new name for the favorite", key);
+          var jsonpath = this.getAttribute('jsonpath').split('.');
+          lastOne = menuItems;
+          for (var i = 0; i < jsonpath.length; i++) {
+            console.log("Loop " + i);
+            if (i == jsonpath.length - 1) {
+              if (jsonpath[i] !== new_key) {
+                Object.defineProperty(lastOne, new_key,
+                    Object.getOwnPropertyDescriptor(lastOne, jsonpath[i]));
+                delete lastOne[jsonpath[i]];
+                gmSet('MAMFaves_favorites', menuItems);
+                window.location.reload();
+              }
+            }
+            var lastOne = lastOne[jsonpath[i]];
+            console.log(lastOne);
+          }
+        };
+        renameButton.style = "border-radius:4px;margin-right:5px;";
+        renameButton.setAttribute('jsonpath', keyItem);
+        newLi.appendChild(renameButton);
+
+        var newSpan = document.createElement('span');
+        newSpan.style = "margin-right:10px";
+        newSpan.innerHTML = "☰";
+        newLi.appendChild(newSpan);
+
+        var newA = document.createElement('a');
+        // newA.id = keyItem + "_link";
+        newA.classList = "bmAchors";
+        newA.href = "https://www.myanonamouse.net" + itemList[key];
+        newA.innerHTML = key;
+        newLi.appendChild(newA);
+        //newLi.innerHTML += "<span style='margin-right:10px'>☰</span><a id=\"" + key + "_link\" name='bmAchors' href='https://www.myanonamouse.net" + itemList[key] + "'>" + key + "</a>";
+
+        //newLi.innerHTML = "<button onclick='remFavorite(\"" + parentItem + "\")' style='border-radius:4px;margin-right:20px;'>Rem</button><span style='margin-right:10px'>☰</span><a id=\"" + key + "_link\" name='bmAchors' href='https://www.myanonamouse.net" + itemList[key] + "'>" + key + "</a>";
+        parent.appendChild(newLi);
+      }
+    }
+  }
 
   // Create the third table row for the main table
   // This row will contain the favorites
@@ -441,25 +648,8 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   // Loop through the favorites and add them to the list
   // Each favorite will have a remove button and a link to the favorite
   // All event listeners for the drag and drop functionality are added here
-  for (const key in GM_getValue("MAMFaves_favorites")) {
-    var newLi = document.createElement('li');
-    newLi.classList = "sortable-item";
-    newLi.id = key;
-    newLi.draggable = "true";
-    newLi.addEventListener('dragstart', handleDragStart, false);
-    newLi.addEventListener('dragover', handleDragOver, false);
-    newLi.addEventListener('dragenter', handleDragEnter, false);
-    newLi.addEventListener('dragleave', handleDragLeave, false);
-    newLi.addEventListener('drop', handleDrop, false);
-    newLi.addEventListener('dragend', handleDragEnd, false);
+  addFavoriteItem(newElement, "", GM_getValue("MAMFaves_favorites"));
 
-    // This is the content shown for each favorite
-    // It includes the remove button and the link to the favorite
-    newLi.innerHTML = "<button onclick='remFavorite(\"" + key + "\")' style='border-radius:4px;margin-right:20px;'>Rem</button><span style='margin-right:10px'>☰</span><a id=\"" + key + "_link\" name='bmAchors' href='https://www.myanonamouse.net" + GM_getValue("MAMFaves_favorites")[key] + "'>" + key + "</a>";
-
-    // Append the list item to the unordered list
-    newElement.appendChild(newLi);
-  }
   // Append the unordered list to the favorites table cell
   favesTd2.appendChild(newElement);
 
@@ -552,8 +742,11 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   favesTr.appendChild(favesTd2);
   // Append the favorites table row to the main table body
   mainTbody.appendChild(favesTr);
+//#endregion Third Table Row - Favorites
+
   // Append the main table to the parent node
   myParent.appendChild(mainTable);
+//#endregion Manage Favorites Page
 }
 
 // Add the tab for the favorites to the preferences page
