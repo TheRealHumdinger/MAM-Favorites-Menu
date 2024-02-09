@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.4.0
+// @version 0.5.0
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -131,22 +131,14 @@ document.getElementById("menu").appendChild(newMenuElement);
 if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view=faves" ) {
 //#region Injected Script and Styles
   document.title = document.title.replace("general", "MAM Favorites");
-  // Grab the head section of the page to add the scripts and styles
+  // Grab the head section of the page to add styles
   var headSec = document.getElementsByTagName("head")[0];
-  // Add the script to remove the favorite from the menu
-  var newScript = document.createElement('script');
-  newScript.innerHTML = `
-    function remFavorite(Name) {
-      sessionStorage.setItem('remFave', true);
-      sessionStorage.setItem('bmName', Name);
-      window.location.reload();
-    }`;
-  headSec.appendChild(newScript);
 
   // Add the styles used below
   var newStyle = document.createElement('style');
   newStyle.innerHTML = `
     .sortable-list {
+      cursor: grab;
       list-style-type: none;
       padding: 0;
       text-align: left;
@@ -155,10 +147,10 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       cursor: grab;
       text-align: left;
     }
-    .sortable-item.over {
+    .sortable-item.over, .sortable-list.over {
       background-color: #333;
     }
-    .sortable-item.dragging {
+    .sortable-item.dragging, .sortable-list.dragging {
       opacity: 0.5;
     }
     .bullets {
@@ -188,36 +180,48 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   let dragSrcEl = null;
 
   function handleDragStart(e) {
+    e.stopPropagation();
     dragSrcEl = this;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', this.outerHTML);
+    // e.dataTransfer.setData('text/plan', e.target.id);
+    log("Starting drag: " + e.target.id);
     this.classList.add('dragging');
   }
 
   // This one is for the drag over event
   function handleDragOver(e) {
+    e.stopPropagation();
     e.preventDefault(); // Necessary for allowing a drop.
     e.dataTransfer.dropEffect = 'move';
 
     if (dragSrcEl !== this) {
-      // Determine mouse position relative to the target element
-      const rect = this.getBoundingClientRect();
-      const relY = e.clientY - rect.top;
+      if (this.classList.contains('sortable-item')) {
+          // Highlight the target element
+        this.classList.add('over');
+        // Determine mouse position relative to the target element
+        const rect = this.getBoundingClientRect();
+        const relY = e.clientY - rect.top;
 
-      // This determines and sets the border style for the target element to show where the item would be dropped
-      if (relY < rect.height / 2) {
-        // Highlight above the target element
-        this.style = "border-top: 2px solid #999;";
-      } else {
-        // Highlight below the target element
-        this.style = "border-bottom: 2px solid #999;";
+        // This determines and sets the border style for the target element to show where the item would be dropped
+        if (relY < rect.height / 2) {
+          // Highlight above the target element
+          this.style = "border-top: 2px solid #999;";
+        } else {
+          // Highlight below the target element
+          this.style = "border-bottom: 2px solid #999;";
+        }
+      } else if (this.classList.contains('sortable-list')) {
+        // Highlight the target element (folder)
+        this.classList.add('over');
+        this.style = "border: 2px solid #999;";
       }
     }
-
   }
 
   // This one is for the drag enter event
   function handleDragEnter(e) {
+    e.stopPropagation();
     if (this !== dragSrcEl) {
       this.classList.add('over');
     }
@@ -225,6 +229,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
   // This one is for the drag leave event
   function handleDragLeave(e) {
+    e.stopPropagation();
     this.classList.remove('over');
     // Remove the border style when the mouse leaves the target element
     this.style = "";
@@ -236,22 +241,26 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     e.preventDefault();
 
     if (dragSrcEl !== this) {
-      // Determine mouse position relative to the target element
-      const rect = this.getBoundingClientRect();
-      const relY = e.clientY - rect.top;
-      // Remove the border style
-      this.style = "";
+      if (this.classList.contains('sortable-item')) {
+        // Determine mouse position relative to the target element
+        const rect = this.getBoundingClientRect();
+        const relY = e.clientY - rect.top;
+        // Remove the border style
+        this.style = "";
 
-      // Determine where to place the dragged element
-      if (relY < rect.height / 2) {
-        // Insert before the target element
-        this.parentNode.insertBefore(dragSrcEl, this);
-      } else {
-        // Insert after the target element
-        this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+        // Determine where to place the dragged element
+        if (relY < rect.height / 2) {
+          // Insert before the target element
+          this.parentNode.insertBefore(dragSrcEl, this);
+        } else {
+          // Insert after the target element
+          this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+        }
+      } else if (this.classList.contains('sortable-list')) {
+        // Insert the dragged element into the target element (folder)
+        this.lastChild.appendChild(dragSrcEl);
       }
     }
-
     return false;
   }
 
@@ -379,25 +388,24 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       }
       if ( typeof itemList[key] === 'object') {
         var newSubMenu = document.createElement('li');
-        newSubMenu.classList = "sortable-item";
+        newSubMenu.classList = "sortable-list";
         newSubMenu.id = keyItem;
-        // newSubMenu.draggable = "true";
-        // newSubMenu.addEventListener('dragstart', handleDragStart, false);
-        // newSubMenu.addEventListener('dragover', handleDragOver, false);
-        // newSubMenu.addEventListener('dragenter', handleDragEnter, false);
-        // newSubMenu.addEventListener('dragleave', handleDragLeave, false);
-        // newSubMenu.addEventListener('drop', handleDrop, false);
-        // newSubMenu.addEventListener('dragend', handleDragEnd, false);
+        newSubMenu.draggable = "true";
+        newSubMenu.addEventListener('dragstart', handleDragStart, false);
+        newSubMenu.addEventListener('dragover', handleDragOver, false);
+        newSubMenu.addEventListener('dragenter', handleDragEnter, false);
+        newSubMenu.addEventListener('dragleave', handleDragLeave, false);
+        newSubMenu.addEventListener('drop', handleDrop, false);
+        newSubMenu.addEventListener('dragend', handleDragEnd, false);
 
         var deleteButton = document.createElement('button');
-        deleteButton.innerHTML = "Delete";
+        deleteButton.innerHTML = "Del";
         deleteButton.onclick = function() {
           var jsonpath = this.getAttribute('jsonpath').split('.');
           lastOne = menuItems;
           for (var i = 0; i < jsonpath.length; i++) {
               if (i == jsonpath.length - 1) {
                   delete lastOne[jsonpath[i]];
-                  console.log(lastOne);
               }
               var lastOne = lastOne[jsonpath[i]];
           }
@@ -409,13 +417,12 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         newSubMenu.appendChild(deleteButton);
         
         var renameButton = document.createElement('button');
-        renameButton.innerHTML = "Rename";
+        renameButton.innerHTML = "Ren";
         renameButton.onclick = function() {
           var new_key = prompt("Enter the new name for the folder", key);
           var jsonpath = this.getAttribute('jsonpath').split('.');
           lastOne = menuItems;
           for (var i = 0; i < jsonpath.length; i++) {
-            console.log("Loop " + i);
             if (i == jsonpath.length - 1) {
               if (jsonpath[i] !== new_key) {
                 Object.defineProperty(lastOne, new_key,
@@ -426,7 +433,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
               }
             }
             var lastOne = lastOne[jsonpath[i]];
-            console.log(lastOne);
           }
         };
         
@@ -457,12 +463,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         // newSubMenuUl.addEventListener('dragleave', handleDragLeave, false);
         // newSubMenuUl.addEventListener('drop', handleDrop, false);
         // newSubMenuUl.addEventListener('dragend', handleDragEnd, false);
-        // newSubMenuUl.innerHTML = "<button onclick='remFavorite(\"" + key + "\")' style='border-radius:4px;margin-right:20px;'>Rem</button><span style='margin-right:10px'>☰</span><label for='" + key + "'>" + key + " →</label>";
         
-        // var newSubMenuLabel = document.createElement('label');
-        // newSubMenuLabel.htmlFor = key;
-        // newSubMenuLabel.innerHTML = key;
-        // newSubMenu.appendChild(newSubMenuLabel);
         addFavoriteItem(newSubMenuUl, keyItem, itemList[key]);
         newSubMenu.appendChild(newSubMenuUl);
         parent.appendChild(newSubMenu);
@@ -503,7 +504,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
           var jsonpath = this.getAttribute('jsonpath').split('.');
           lastOne = menuItems;
           for (var i = 0; i < jsonpath.length; i++) {
-            console.log("Loop " + i);
             if (i == jsonpath.length - 1) {
               if (jsonpath[i] !== new_key) {
                 Object.defineProperty(lastOne, new_key,
@@ -514,7 +514,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
               }
             }
             var lastOne = lastOne[jsonpath[i]];
-            console.log(lastOne);
           }
         };
         renameButton.style = "border-radius:4px;margin-right:5px;";
@@ -575,6 +574,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   var updateButton = document.createElement('button');
   updateButton.id = "updateButton";
   updateButton.innerHTML = "Update";
+  updateButton.classList = "bigbutton";
   // This is the onclick function for the update button
   // Handles created sessionStorage variables and reloads the page
   updateButton.onclick = function() {
@@ -588,7 +588,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       var parentUl = allElements[i].parentElement.parentElement;
       var parentPath = parentUl.getAttribute('jsonpath');
       parentPath ??= "";
-      console.log("Parent Path: " + parentPath);
 
       var curMenuItems = newMenuItems;
       if (parentPath !== "") {
@@ -610,7 +609,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         curMenuItems[bmName] = bmLink;
       }
     }
-    console.log(newMenuItems);
 
     GM_setValue('MAMFaves_favorites', newMenuItems);
     GM_setValue('MAMFaves_debug', document.getElementById('debugCB').checked == true);
@@ -622,9 +620,26 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   // Adds whitespace after the update button to separate it from the other buttons
   favesTd2.appendChild(document.createTextNode("\n"));
 
+  // Create folder button
+  var folderButton = document.createElement('button');
+  folderButton.innerHTML = "Add Folder";
+  folderButton.classList = "bigbutton";
+  folderButton.onclick = function() {
+    var newFolderName = prompt('Give a name for the folder');
+    if (!(newFolderName === null) && !(newFolderName === "")) {
+      var newFolder = {};
+      menuItems[newFolderName] = newFolder;
+      GM_setValue('MAMFaves_favorites', menuItems);
+      window.location.reload();
+    }
+  };
+  favesTd2.appendChild(folderButton);
+  favesTd2.appendChild(document.createElement("br"));
+
   // Add the Export JSON button to the page
   var rawButton = document.createElement('button');
   rawButton.innerHTML = "Export JSON";
+  rawButton.classList = "bigbutton";
   // The onclick function for the Export JSON button simply sets a sessionStorage variable and reloads the page
   rawButton.onclick = function() {
     var rawJSON = JSON.stringify(GM_getValue("MAMFaves_favorites"), null, 4);
@@ -645,6 +660,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   // Add the Import JSON button to the page
   var importButton = document.createElement('button');
   importButton.innerHTML = "Import JSON";
+  importButton.classList = "bigbutton";
   // The onclick function asks the user to paste the raw JSON string and puts that into a sessionStorage variable and reloads the page
   // If you click cancel or it's an empty string then nothing happens
   importButton.onclick = function() {
@@ -652,7 +668,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
     if (!(rawMenuItems === null)) {
       try {
-        log("Updating favorites from sessionStorage");
         GM_setValue("MAMFaves_favorites", JSON.parse(rawMenuItems));
       } catch {
         alert("There was an error parsing the JSON string");
