@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.1
+// @version 0.5.2
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -664,17 +664,61 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   // The onclick function asks the user to paste the raw JSON string and puts that into a sessionStorage variable and reloads the page
   // If you click cancel or it's an empty string then nothing happens
   importButton.onclick = function() {
-    var rawMenuItems = prompt("Paste the raw JSON string containing your favorites");
-
-    if (!(rawMenuItems === null)) {
-      try {
-        GM_setValue("MAMFaves_favorites", JSON.parse(rawMenuItems));
-      } catch {
-        alert("There was an error parsing the JSON string");
+    var importModal = document.createElement('div');
+    importModal.style = "position: fixed;top: 0;left: 0;width: 100%;height: 100%;background-color: rgba(0,0,0,0.5);z-index: 1000;";
+    var importModalContent = document.createElement('div');
+    importModalContent.style = "position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);background-color: #fefefe;padding: 20px;border: 1px solid #888;display: flex;flex-direction: column;align-items: center;";
+    var importModalClose = document.createElement('span');
+    importModalClose.innerHTML = "&times;";
+    importModalClose.style = "position: absolute;top: 0;right: 0;font-size: 20px;font-weight: bold;cursor: pointer;";
+    importModalClose.onclick = function() {
+      importModal.style = "display: none;";
+    };
+    importModalContent.appendChild(importModalClose);
+    var importModalTitle = document.createElement('h2');
+    importModalTitle.innerHTML = "Import JSON";
+    importModalContent.appendChild(importModalTitle);
+    var importModalText = document.createElement('p');
+    importModalText.innerHTML = "Paste the raw JSON string containing your favorites";
+    importModalContent.appendChild(importModalText);
+    var importModalTextarea = document.createElement('textarea');
+    importModalTextarea.style = "width: 800px;height: 600px;";
+    importModalContent.appendChild(importModalTextarea);
+    var importModalButton = document.createElement('button');
+    importModalButton.innerHTML = "Import";
+    importModalButton.onclick = function() {
+      var rawMenuItems = importModalTextarea.value;
+      if (!(rawMenuItems === null)) {
+        try {
+          GM_setValue("MAMFaves_favorites", JSON.parse(rawMenuItems));
+        } catch {
+          alert("There was an error parsing the JSON string");
+        }
+        window.location.reload();
       }
-      window.location.reload();
     }
+    importModalContent.appendChild(importModalButton);
+    var importModalOpenFileButton = document.createElement('button');
+    importModalOpenFileButton.innerHTML = "Open File";
+    importModalOpenFileButton.onclick = function() {
+      var fileInput = document.createElement('input');
+      fileInput.type = "file";
+      fileInput.style = "display: none;";
+      fileInput.onchange = function() {
+        var file = fileInput.files[0];
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          importModalTextarea.value = e.target.result;
+        };
+        reader.readAsText(file);
+      };
+      fileInput.click();
+    }
+    importModalContent.appendChild(importModalOpenFileButton);
+    importModal.appendChild(importModalContent);
+    document.body.appendChild(importModal);
   };
+  
   // Append the Import JSON button to the favorites table cell
   favesTd2.appendChild(importButton);
   // Adds whitespace after the Import JSON button to separate it from the other buttons
@@ -687,20 +731,71 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   // The onclick function asks the user to paste the raw JSON string and puts that into a sessionStorage variable and reloads the page
   // If you click cancel or it's an empty string then nothing happens
   mergeButton.onclick = function() {
-    var rawMenuItems = prompt("Paste the raw JSON string containing your favorites");
+    var mergeModal = document.createElement('div');
+    mergeModal.style = "position: fixed;top: 0;left: 0;width: 100%;height: 100%;background-color: rgba(0,0,0,0.5);z-index: 1000;";
 
-    if (!(rawMenuItems === null)) {
-      try {
-        var newMenuItems = JSON.parse(rawMenuItems);
-        var oldMenuItems = GM_getValue("MAMFaves_favorites");
-        var mergedMenuItems = {...oldMenuItems, ...newMenuItems};
-        GM_setValue("MAMFaves_favorites", mergedMenuItems);
-      } catch {
-        alert("There was an error parsing the JSON string");
+    var mergeModalContent = document.createElement('div');
+    mergeModalContent.style = "position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);background-color: #fefefe;padding: 20px;border: 1px solid #888;display: flex;flex-direction: column;align-items: center;";
+
+    var mergeModalClose = document.createElement('span');
+    mergeModalClose.innerHTML = "&times;";
+    mergeModalClose.style = "position: absolute;top: 0;right: 0;font-size: 20px;font-weight: bold;cursor: pointer;";
+    mergeModalClose.onclick = function() {
+      mergeModal.style = "display: none;";
+    };
+    mergeModalContent.appendChild(mergeModalClose);
+
+    var mergeModalTitle = document.createElement('h2');
+    mergeModalTitle.innerHTML = "Merge JSON";
+    mergeModalContent.appendChild(mergeModalTitle);
+
+    var mergeModalText = document.createElement('p');
+    mergeModalText.innerHTML = "Paste the raw JSON string containing your favorites";
+    mergeModalContent.appendChild(mergeModalText);
+
+    var mergeModalTextarea = document.createElement('textarea');
+    mergeModalTextarea.style = "width: 800px;height: 600px;";
+    mergeModalContent.appendChild(mergeModalTextarea);
+
+    var mergeModalButton = document.createElement('button');
+    mergeModalButton.innerHTML = "Merge";
+    mergeModalButton.onclick = function() {
+      var rawMenuItems = mergeModalTextarea.value;
+      if (!(rawMenuItems === null)) {
+        try {
+          var newMenuItems = JSON.parse(rawMenuItems);
+          var oldMenuItems = GM_getValue("MAMFaves_favorites");
+          var mergedMenuItems = {...oldMenuItems, ...newMenuItems};
+          GM_setValue("MAMFaves_favorites", mergedMenuItems);
+        } catch {
+          alert("There was an error parsing the JSON string");
+        }
+        window.location.reload();
       }
-      window.location.reload();
     }
+    mergeModalContent.appendChild(mergeModalButton);
+
+    var mergeModalOpenFileButton = document.createElement('button');
+    mergeModalOpenFileButton.innerHTML = "Open File";
+    mergeModalOpenFileButton.onclick = function() {
+      var fileInput = document.createElement('input');
+      fileInput.type = "file";
+      fileInput.style = "display: none;";
+      fileInput.onchange = function() {
+        var file = fileInput.files[0];
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          mergeModalTextarea.value = e.target.result;
+        };
+        reader.readAsText(file);
+      };
+      fileInput.click();
+    }
+    mergeModalContent.appendChild(mergeModalOpenFileButton);
+    mergeModal.appendChild(mergeModalContent);
+    document.body.appendChild(mergeModal);
   };
+
   // Append the Merge JSON button to the favorites table cell
   favesTd2.appendChild(mergeButton);
   // Adds whitespace after the Merge JSON button to separate it from the other buttons
