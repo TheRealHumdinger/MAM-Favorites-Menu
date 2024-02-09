@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.3.6
+// @version 0.4.0
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -27,84 +27,6 @@ function log(message) {
     console.log(logPrefix + message);
   }
 }
-
-//#region Actions from sessionStorage
-// Check if the addFave sessionStorage variable is set and add the favorite to the menu
-// There is an asumption that the user has already been prompted for the name of the bookmark and provided it
-if ( !(sessionStorage.addFave === undefined) ) {
-    var bmName = sessionStorage.getItem('newBMName');
-    var bmUrl = sessionStorage.getItem('bookmark');
-    log("Adding new favorite, " + bmName + ", to the menu");
-
-    menuItems[bmName] = bmUrl;
-    GM_setValue('MAMFaves_favorites', menuItems);
-    sessionStorage.removeItem('addFave');
-    sessionStorage.removeItem('newBMName');
-    sessionStorage.removeItem('bookmark');
-}
-
-// Check if the remove favorite sessionStorage variable is set and remove the favorite from the menu
-if ( !(sessionStorage.remFave === undefined) ) {
-    bmName = sessionStorage.getItem('bmName');
-    log("Removing favorite, " + bmName + ", from the menu");
-    // bmNameArr = bmName.split("|");
-    // bmNameArr.pop();
-
-    // delete menuItems[bmName];
-    // GM_setValue('MAMFaves_favorites', menuItems);
-    sessionStorage.removeItem('remFave');
-    sessionStorage.removeItem('bmName');
-}
-
-// Check if the menuItems sessionStorage variable is set and update the favorites
-// Also check if the debug sessionStorage variable is set and update the debug setting
-// Also check if the menuTitle sessionStorage variable is set and update the menu title
-// This update is triggered from the Update and JSON import buttons on the preferences page
-if ( !(sessionStorage.menuItems === undefined) ) {
-    try {
-      log("Updating favorites from sessionStorage");
-      GM_setValue("MAMFaves_favorites", JSON.parse(sessionStorage.menuItems));
-      menuItems = JSON.parse(sessionStorage.menuItems);
-    } catch {
-      alert("There was an error parsing the JSON string");
-    }
-    sessionStorage.removeItem('menuItems');
-
-    if (!(sessionStorage.debug === undefined)) {
-      log("Updating debug setting from sessionStorage to " + sessionStorage.debug);
-      GM_setValue("MAMFaves_debug", (sessionStorage.debug == "true"));
-      debug = (sessionStorage.debug == "true");
-      sessionStorage.removeItem('debug');
-    }
-
-    if (!(sessionStorage.menuTitle === undefined)) {
-      log("Updating menu title from sessionStorage to " + sessionStorage.menuTitle);
-      GM_setValue("MAMFaves_menuTitle", sessionStorage.menuTitle);
-      menuTitle = sessionStorage.menuTitle;
-      sessionStorage.removeItem('menuTitle');
-    }
-}
-
-// If the sessionStorage showRaw variable is set
-// Download the raw JSON of the favorites and export it to a file called MAMFavorites.json
-if (!(sessionStorage.showRaw === undefined) ) {
-    var rawJSON = JSON.stringify(GM_getValue("MAMFaves_favorites"), null, 4);
-    var blob = new Blob([rawJSON], {type: "text/plain;charset=utf-8"});
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.download = "MAMFavorites.json";
-    a.innerHTML = "Download";
-    a.href = url;
-    a.click();
-    sessionStorage.removeItem('showRaw');
-}
-
-// If the sessionStorage deleteFaves variable is set then delete all the favorites from the GM storage
-if (!(sessionStorage.deleteFaves === undefined)) {
-    GM_deleteValue('MAMFaves_favorites');
-    sessionStorage.removeItem('deleteFaves');
-}
-//#endregion Actions from sessionStorage
 
 //#region Add new menu
 // Create menu items and submenus/items
@@ -166,14 +88,12 @@ addFaveAnchor.tabindex = "0";
 addFaveAnchor.id = "addFave";
 addFaveAnchor.innerHTML = "Add Fave";
 addFaveAnchor.onclick = function() {
-  var newBMName = prompt('Give a name for the bookmark');
+  var newBMName = prompt('Give a name for the bookmark', document.title);
   if (!(newBMName === null) && !(newBMName === "")) {
     var bookmark = window.location.pathname + window.location.search;
+    menuItems[newBMName] = bookmark;
+    GM_setValue('MAMFaves_favorites', menuItems);
 
-    sessionStorage.setItem('addFave', true);
-    sessionStorage.setItem('newBMName', newBMName);
-    sessionStorage.setItem('bookmark', bookmark);
-  
     window.location.reload();
   }
 };
@@ -707,8 +627,15 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   rawButton.innerHTML = "Export JSON";
   // The onclick function for the Export JSON button simply sets a sessionStorage variable and reloads the page
   rawButton.onclick = function() {
-    sessionStorage.setItem('showRaw', true);
-    window.location.reload();
+    var rawJSON = JSON.stringify(GM_getValue("MAMFaves_favorites"), null, 4);
+    var blob = new Blob([rawJSON], {type: "text/plain;charset=utf-8"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    var timestamp = new Date().toISOString().replace(/:/g, "-");
+    a.download = "MAMFavorites_" + timestamp + ".json";
+    a.innerHTML = "Download";
+    a.href = url;
+    a.click();
   };
   // Append the Export JSON button to the favorites table cell
   favesTd2.appendChild(rawButton);
@@ -724,7 +651,12 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     var rawMenuItems = prompt("Paste the raw JSON string containing your favorites");
 
     if (!(rawMenuItems === null)) {
-      sessionStorage.setItem('menuItems', rawMenuItems);
+      try {
+        log("Updating favorites from sessionStorage");
+        GM_setValue("MAMFaves_favorites", JSON.parse(rawMenuItems));
+      } catch {
+        alert("There was an error parsing the JSON string");
+      }
       window.location.reload();
     }
   };
