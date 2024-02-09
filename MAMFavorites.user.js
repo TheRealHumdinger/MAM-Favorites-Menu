@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.0
+// @version 0.5.1
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -677,7 +677,35 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   };
   // Append the Import JSON button to the favorites table cell
   favesTd2.appendChild(importButton);
+  // Adds whitespace after the Import JSON button to separate it from the other buttons
+  favesTd2.appendChild(document.createTextNode("\n"));
 
+  // Add a merge button to the page
+  var mergeButton = document.createElement('button');
+  mergeButton.innerHTML = "Merge JSON";
+  mergeButton.classList = "bigbutton";
+  // The onclick function asks the user to paste the raw JSON string and puts that into a sessionStorage variable and reloads the page
+  // If you click cancel or it's an empty string then nothing happens
+  mergeButton.onclick = function() {
+    var rawMenuItems = prompt("Paste the raw JSON string containing your favorites");
+
+    if (!(rawMenuItems === null)) {
+      try {
+        var newMenuItems = JSON.parse(rawMenuItems);
+        var oldMenuItems = GM_getValue("MAMFaves_favorites");
+        var mergedMenuItems = {...oldMenuItems, ...newMenuItems};
+        GM_setValue("MAMFaves_favorites", mergedMenuItems);
+      } catch {
+        alert("There was an error parsing the JSON string");
+      }
+      window.location.reload();
+    }
+  };
+  // Append the Merge JSON button to the favorites table cell
+  favesTd2.appendChild(mergeButton);
+  // Adds whitespace after the Merge JSON button to separate it from the other buttons
+  favesTd2.appendChild(document.createTextNode("\n"));
+  
   // Add an hr separator to the page to separate the delete button from the other buttons to prevent accidental clicks
   var hrElement = document.createElement('hr');
   hrElement.style = "width: 200px;margin-left:5px;text-align: left;";
