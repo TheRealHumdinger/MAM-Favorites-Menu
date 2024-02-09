@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.3.1
+// @version 0.3.5
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -461,6 +461,13 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         var newSubMenu = document.createElement('li');
         newSubMenu.classList = "sortable-item";
         newSubMenu.id = keyItem;
+        // newSubMenu.draggable = "true";
+        // newSubMenu.addEventListener('dragstart', handleDragStart, false);
+        // newSubMenu.addEventListener('dragover', handleDragOver, false);
+        // newSubMenu.addEventListener('dragenter', handleDragEnter, false);
+        // newSubMenu.addEventListener('dragleave', handleDragLeave, false);
+        // newSubMenu.addEventListener('drop', handleDrop, false);
+        // newSubMenu.addEventListener('dragend', handleDragEnd, false);
 
         var deleteButton = document.createElement('button');
         deleteButton.innerHTML = "Delete";
@@ -519,16 +526,9 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         newLabel.setAttribute('jsonpath', keyItem);
         newSubMenu.appendChild(newLabel);
 
-        // newSubMenu.draggable = "true";
-        // newSubMenu.addEventListener('dragstart', handleDragStart, false);
-        // newSubMenu.addEventListener('dragover', handleDragOver, false);
-        // newSubMenu.addEventListener('dragenter', handleDragEnter, false);
-        // newSubMenu.addEventListener('dragleave', handleDragLeave, false);
-        // newSubMenu.addEventListener('drop', handleDrop, false);
-        // newSubMenu.addEventListener('dragend', handleDragEnd, false);
-
         var newSubMenuUl = document.createElement('ul');
         newSubMenuUl.id = key + "_ul";
+        newSubMenuUl.setAttribute('jsonpath', keyItem);
         // newSubMenuUl.draggable = "true";
         // newSubMenuUl.classList = "sortable-list";
         // newSubMenuUl.addEventListener('dragstart', handleDragStart, false);
@@ -557,9 +557,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         newLi.addEventListener('dragleave', handleDragLeave, false);
         newLi.addEventListener('drop', handleDrop, false);
         newLi.addEventListener('dragend', handleDragEnd, false);
-
-        // log(logPrefix + "Adding " + key + " to the list");
-        // log(logPrefix + "The parent is " + parent.id);
 
         var deleteButton = document.createElement('button');
         deleteButton.innerHTML = "Del";
@@ -610,15 +607,11 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         newLi.appendChild(newSpan);
 
         var newA = document.createElement('a');
-        // newA.id = keyItem + "_link";
         newA.classList = "bmAnchors";
         newA.href = "https://www.myanonamouse.net" + itemList[key];
         newA.innerHTML = key;
         newA.setAttribute('jsonpath', keyItem);
         newLi.appendChild(newA);
-        //newLi.innerHTML += "<span style='margin-right:10px'>☰</span><a id=\"" + key + "_link\" name='bmAchors' href='https://www.myanonamouse.net" + itemList[key] + "'>" + key + "</a>";
-
-        //newLi.innerHTML = "<button onclick='remFavorite(\"" + parentItem + "\")' style='border-radius:4px;margin-right:20px;'>Rem</button><span style='margin-right:10px'>☰</span><a id=\"" + key + "_link\" name='bmAchors' href='https://www.myanonamouse.net" + itemList[key] + "'>" + key + "</a>";
         parent.appendChild(newLi);
       }
     }
@@ -667,37 +660,39 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   updateButton.onclick = function() {
     var allElements = document.getElementsByClassName('bmAnchors');
     var newMenuItems = {};
+    var curMenuItems = newMenuItems;
 
-    curMenuItems = newMenuItems;
+    // var curMenuItems = newMenuItems;
     curFolder = "";
     for (var i = 0; i < allElements.length; i++) {
-      var bmName = allElements[i].innerHTML;
+      var parentUl = allElements[i].parentElement.parentElement;
+      var parentPath = parentUl.getAttribute('jsonpath');
+      parentPath ??= "";
+      console.log("Parent Path: " + parentPath);
 
+      var curMenuItems = newMenuItems;
+      if (parentPath !== "") {
+        var jsonpathArr = parentPath.split('.');
+        for (var j = 0; j < jsonpathArr.length; j++) {
+          curMenuItems = curMenuItems[jsonpathArr[j]];
+        }
+      }
+
+      var bmName = allElements[i].innerHTML;
       if (bmName.includes("→")) {
         bmName = bmName.substring(0, bmName.length - 2);
-        newMenuItems[bmName] = {};
-        curMenuItems = newMenuItems[bmName];
-        curFolder = bmName;
+        curMenuItems[bmName] = {};
       } else {
         var bmLink = allElements[i].href;
         if (bmLink.includes("https://www.myanonamouse.net")) {
           bmLink = bmLink.substring(28);
         }
-        if (!(allElements[i].getAttribute('jsonpath').includes(curFolder))) {
-          curMenuItems = newMenuItems;
-        }
         curMenuItems[bmName] = bmLink;
       }
-      // bmLink = bmLink.substring(28);
-      // newMenuItems[bmName] = bmLink;
     }
-    // console.log(newMenuItems);
+    console.log(newMenuItems);
 
     GM_setValue('MAMFaves_favorites', newMenuItems);
-
-    // sessionStorage.setItem('menuItems', JSON.stringify(newMenuItems));
-    // sessionStorage.setItem('debug', document.getElementById('debugCB').checked);
-    // sessionStorage.setItem('menuTitle', document.getElementById('menuTitle').value);
     window.location.reload();
   };
   // Append the update button to the favorites table cell
