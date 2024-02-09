@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.3.5
+// @version 0.3.6
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -693,6 +693,8 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     console.log(newMenuItems);
 
     GM_setValue('MAMFaves_favorites', newMenuItems);
+    GM_setValue('MAMFaves_debug', document.getElementById('debugCB').checked == true);
+    GM_setValue('MAMFaves_menuTitle', document.getElementById('menuTitle').value);
     window.location.reload();
   };
   // Append the update button to the favorites table cell
