@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.3
+// @version 0.5.4
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -248,6 +248,15 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       } else if (this.classList.contains('sortable-list')) {
         // Insert the dragged element into the target element (folder)
         this.lastChild.appendChild(dragSrcEl);
+      }
+
+      if (dragSrcEl.classList.contains('sortable-list')) {
+        // log("Last child: " + dragSrcEl.lastChild.id);
+        parentPath = dragSrcEl.parentElement.getAttribute('jsonpath') + ".";
+        if (parentPath === "null.") {
+          parentPath = "";
+        }
+        dragSrcEl.lastChild.setAttribute('jsonpath', parentPath + dragSrcEl.lastChild.id.substring(0, dragSrcEl.lastChild.id.length - 3));
       }
       document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!";
     }
