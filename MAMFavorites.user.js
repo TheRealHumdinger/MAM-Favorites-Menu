@@ -81,14 +81,14 @@ var addFaveMenuElement = document.createElement('li');
 addFaveMenuElement.role = "none";
 
 // Add the Add Fave menu item Anchor with the onclick function
-// It will put the name of the bookmark and the url into the sessionStorage and reload the page so the bookmark can be added
+// It will put the name of the favorite and the url into the sessionStorage and reload the page so the favorite can be added
 var addFaveAnchor = document.createElement('a');
 addFaveAnchor.role = "menuitem";
 addFaveAnchor.tabindex = "0";
 addFaveAnchor.id = "addFave";
 addFaveAnchor.innerHTML = "Add Fave";
 addFaveAnchor.onclick = function() {
-  var newBMName = prompt('Give a name for the bookmark', document.title);
+  var newBMName = prompt('Give a name for the favorite', document.title);
   if (!(newBMName === null) && !(newBMName === "")) {
     var bookmark = window.location.pathname + window.location.search;
     menuItems[newBMName] = bookmark;
