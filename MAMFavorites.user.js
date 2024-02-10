@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.5
+// @version 0.5.6
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -18,8 +18,12 @@
 // Get settings from GM storage
 var debug = GM_getValue("MAMFaves_debug", false);
 var menuTitle = GM_getValue("MAMFaves_menuTitle", "Favorites");
+var subMenuDirection = GM_getValue("MAMFaves_subMenuDirection", "right");
 var menuItems = GM_getValue("MAMFaves_favorites", { "Howto use MAM Favorites": "https://www.myanonamouse.net/f/t/75447"});
 var logPrefix = "[MAMFaveMenu] ";
+
+var cssDirection = "";
+if (subMenuDirection === "right") { cssDirection = "left"; } else { cssDirection = "right"; }
 
 // Function to log messages to the console if the debug setting is true
 function log(message) {
@@ -41,7 +45,7 @@ function addMenuItems(parent, itemList) {
       var newSubMenuUl = document.createElement('ul');
       newSubMenuUl.role = "menu";
       newSubMenuUl.ariaLabel = key;
-      newSubMenuUl.style = "position: float;left: 100%;top: 0;";
+      newSubMenuUl.style = "position: float;" + cssDirection + ": 100%;top: 0;";
       newSubMenuUl.classList = "hidden";
 
       // Recursively call addMenuItems to loop through the submenu items and add them to the submenu
@@ -156,7 +160,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     .bullets {
       margin-left: 30px;
     }
-    button, input {
+    button, input, select {
       border-radius: 4px;
     }`;
   headSec.appendChild(newStyle);
@@ -371,6 +375,29 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   prefsTd2.appendChild(menuTitleLabel);
   prefsTd2.appendChild(menuTitleInput);
   prefsTd2.appendChild(document.createElement('br'));
+
+  // Create label for the submenu direction selector
+  var subMenuDirectionLabel = document.createElement('label');
+  subMenuDirectionLabel.innerHTML = "Sub-menu direction ";
+  prefsTd2.appendChild(subMenuDirectionLabel);
+
+  // Create the selector for the submenu direction
+  var subMenuDirectionSelect = document.createElement('select');
+  subMenuDirectionSelect.id = "subMenuDirection";
+  subMenuDirectionSelect.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
+
+  // Create the options for the submenu direction selector
+  var subMenuDirectionOptions = ["right", "left"];
+  for (var i = 0; i < subMenuDirectionOptions.length; i++) {
+    var newOption = document.createElement('option');
+    newOption.value = subMenuDirectionOptions[i];
+    newOption.innerHTML = subMenuDirectionOptions[i];
+    if (subMenuDirectionOptions[i] === subMenuDirection) {
+      newOption.selected = true;
+    }
+    subMenuDirectionSelect.appendChild(newOption);
+  }
+  prefsTd2.appendChild(subMenuDirectionSelect);
 
   // Append the preferences table cell to the preferences table row and table body
   prefsTr.appendChild(prefsTd1);
@@ -615,6 +642,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     GM_setValue('MAMFaves_favorites', newMenuItems);
     GM_setValue('MAMFaves_debug', document.getElementById('debugCB').checked == true);
     GM_setValue('MAMFaves_menuTitle', document.getElementById('menuTitle').value);
+    GM_setValue('MAMFaves_subMenuDirection', document.getElementById('subMenuDirection').value);
     window.location.reload();
   };
   // Append the update button to the favorites table cell
