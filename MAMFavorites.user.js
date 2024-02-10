@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.4
+// @version 0.5.5
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -18,7 +18,7 @@
 // Get settings from GM storage
 var debug = GM_getValue("MAMFaves_debug", false);
 var menuTitle = GM_getValue("MAMFaves_menuTitle", "Favorites");
-var menuItems = GM_getValue("MAMFaves_favorites", { "Howto use MAM Favorites": "https://www.myanonamouse.net/f/t/70066"});
+var menuItems = GM_getValue("MAMFaves_favorites", { "Howto use MAM Favorites": "https://www.myanonamouse.net/f/t/75447"});
 var logPrefix = "[MAMFaveMenu] ";
 
 // Function to log messages to the console if the debug setting is true
@@ -310,7 +310,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
    <li class='bullets'>Delete all your favorites to simply start over</li>
    <br />
    <strong>NOTE:</strong> The favorites are stored in your browser's local storage and are not shared between devices or browsers. If you clear your browser's local storage, you will lose your favorites.<br />
-   You can read more about all of this in the <a href="https://www.myanonamouse.net/f/t/70066">Forum Post</a>.<br />`;
+   You can read more about all of this in the <a href="https://www.myanonamouse.net/f/t/75447">Forum Post</a>.<br />`;
 
   mainTr.appendChild(mainTd);
   mainTbody.appendChild(mainTr);
