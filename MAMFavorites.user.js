@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.2
+// @version 0.5.3
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -161,17 +161,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     }`;
   headSec.appendChild(newStyle);
 
-  function gmSet(name, value) {
-    GM_setValue(name, value);
-  }
-
-  function gmGet(name) {
-    return GM_getValue(name);
-  }
-
-  function gmDelete(name) {
-    GM_deleteValue(name);
-  }
 //#endregion Injected Script and Styles
 
 //#region Drag and Drop Event Listeners
@@ -260,6 +249,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         // Insert the dragged element into the target element (folder)
         this.lastChild.appendChild(dragSrcEl);
       }
+      document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!";
     }
     return false;
   }
@@ -267,9 +257,10 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   // This one is for the drag end event
   // Basically just cleans up the styles and classes
   function handleDragEnd(e) {
-    let items = document.querySelectorAll('.sortable-list .sortable-item');
+    let items = document.querySelectorAll('.sortable-list, .sortable-item');
     [].forEach.call(items, function(item) {
       item.classList.remove('over', 'dragging');
+      item.style = "";
     });
   }
 //#endregion Drag and Drop Event Listeners
@@ -337,6 +328,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   var debugCB = document.createElement('input');
   debugCB.id = "debugCB";
   debugCB.type = "checkbox";
+  debugCB.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
   // Set it to checked if the debug setting is true
   // The debug setting is stored as a string so it needs to be compared to a string
   // I will probably change this to a boolean in the future but it's not a priority right now
@@ -359,6 +351,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   menuTitleInput.classList = "mp_textInput";
   menuTitleInput.type = "text";
   menuTitleInput.value = menuTitle;
+  menuTitleInput.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
 
   // Create the label for the custom menu title input
   var menuTitleLabel = document.createElement('label');
@@ -409,7 +402,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
               }
               var lastOne = lastOne[jsonpath[i]];
           }
-          gmSet('MAMFaves_favorites', menuItems);
+          GM_setValue('MAMFaves_favorites', menuItems);
           window.location.reload();
         };
         deleteButton.style = "border-radius:4px;margin-right:5px;";
@@ -428,7 +421,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
                 Object.defineProperty(lastOne, new_key,
                     Object.getOwnPropertyDescriptor(lastOne, jsonpath[i]));
                 delete lastOne[jsonpath[i]];
-                gmSet('MAMFaves_favorites', menuItems);
+                GM_setValue('MAMFaves_favorites', menuItems);
                 window.location.reload();
               }
             }
@@ -490,7 +483,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
               }
               var lastOne = lastOne[jsonpath[i]];
           }
-          gmSet('MAMFaves_favorites', menuItems);
+          GM_setValue('MAMFaves_favorites', menuItems);
           window.location.reload();
         };
         deleteButton.style = "border-radius:4px;margin-right:5px;";
@@ -509,7 +502,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
                 Object.defineProperty(lastOne, new_key,
                     Object.getOwnPropertyDescriptor(lastOne, jsonpath[i]));
                 delete lastOne[jsonpath[i]];
-                gmSet('MAMFaves_favorites', menuItems);
+                GM_setValue('MAMFaves_favorites', menuItems);
                 window.location.reload();
               }
             }
@@ -666,8 +659,10 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   importButton.onclick = function() {
     var importModal = document.createElement('div');
     importModal.style = "position: fixed;top: 0;left: 0;width: 100%;height: 100%;background-color: rgba(0,0,0,0.5);z-index: 1000;";
+
     var importModalContent = document.createElement('div');
     importModalContent.style = "position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);background-color: #fefefe;padding: 20px;border: 1px solid #888;display: flex;flex-direction: column;align-items: center;";
+
     var importModalClose = document.createElement('span');
     importModalClose.innerHTML = "&times;";
     importModalClose.style = "position: absolute;top: 0;right: 0;font-size: 20px;font-weight: bold;cursor: pointer;";
@@ -675,15 +670,19 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       importModal.style = "display: none;";
     };
     importModalContent.appendChild(importModalClose);
+
     var importModalTitle = document.createElement('h2');
     importModalTitle.innerHTML = "Import JSON";
     importModalContent.appendChild(importModalTitle);
+
     var importModalText = document.createElement('p');
-    importModalText.innerHTML = "Paste the raw JSON string containing your favorites";
+    importModalText.innerHTML = "Paste or open the file containing the raw JSON string of your favorites<br />This will overwrite your current favorites<br />Click the Import button to import the JSON string when the text area is filled";
     importModalContent.appendChild(importModalText);
+
     var importModalTextarea = document.createElement('textarea');
     importModalTextarea.style = "width: 800px;height: 600px;";
     importModalContent.appendChild(importModalTextarea);
+
     var importModalButton = document.createElement('button');
     importModalButton.innerHTML = "Import";
     importModalButton.onclick = function() {
@@ -698,6 +697,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       }
     }
     importModalContent.appendChild(importModalButton);
+    
     var importModalOpenFileButton = document.createElement('button');
     importModalOpenFileButton.innerHTML = "Open File";
     importModalOpenFileButton.onclick = function() {
@@ -750,7 +750,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     mergeModalContent.appendChild(mergeModalTitle);
 
     var mergeModalText = document.createElement('p');
-    mergeModalText.innerHTML = "Paste the raw JSON string containing your favorites";
+    mergeModalText.innerHTML = "Paste or open the file containing the raw JSON string of the favorites you want to merge<br />This will merge the favorites in this list with your current favorites<br />Click the Merge button to merge the JSON string when the text area is filled";
     mergeModalContent.appendChild(mergeModalText);
 
     var mergeModalTextarea = document.createElement('textarea');
@@ -800,6 +800,11 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   favesTd2.appendChild(mergeButton);
   // Adds whitespace after the Merge JSON button to separate it from the other buttons
   favesTd2.appendChild(document.createTextNode("\n"));
+
+  var indicatorLabel = document.createElement('label');
+  indicatorLabel.id = "indicatorLabel";
+  indicatorLabel.style = "margin-left: 5px;color: red;";
+  favesTd2.appendChild(indicatorLabel);
   
   // Add an hr separator to the page to separate the delete button from the other buttons to prevent accidental clicks
   var hrElement = document.createElement('hr');
