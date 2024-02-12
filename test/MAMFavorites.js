@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.9alpha
+// @version 0.5.9beta
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -63,10 +63,12 @@ function addMenuItems(parent, itemList) {
       var newMenuItem = document.createElement('li');
       newMenuItem.role = "none";
       var thisurl = itemList[key];
-      if (itemList[key].includes("http") && !(itemList[key].match(/(myanonamouse.net|localhost|192.168)/))) {
-        thisurl = "https://r.mrd.ninja/" + itemList[key];
+      var target = "";
+      if (itemList[key].match(/http.:/) && !(itemList[key].match(/(myanonamouse.net)/))) {
+        target = 'target="_blank"';
+        // thisurl = "https://r.mrd.ninja/" + itemList[key];
       }
-      newMenuItem.innerHTML = '<a role="menuitem" href="' + thisurl + '">' + key + '</a>';
+      newMenuItem.innerHTML = '<a role="menuitem" href="' + thisurl + '" ' + target + '>' + key + '</a>';
       parent.appendChild(newMenuItem);
     }
   }
