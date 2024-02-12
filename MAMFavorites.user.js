@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.6
+// @version 0.5.7
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -556,7 +556,13 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
         var newA = document.createElement('a');
         newA.classList = "bmAnchors";
-        newA.href = "https://www.myanonamouse.net" + itemList[key];
+        console.log(itemList[key]);
+        var thisurl = itemList[key];
+        if (thisurl.includes("http")) {
+          newA.href = thisurl;
+        } else {
+          newA.href = "https://www.myanonamouse.net" + itemList[key];
+        }
         newA.innerHTML = key;
         newA.setAttribute('jsonpath', keyItem);
         newLi.appendChild(newA);
