@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.9beta
+// @version 0.5.9c
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -266,7 +266,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
       if (dragSrcEl.classList.contains('sortable-list')) {
         // log("Last child: " + dragSrcEl.lastChild.id);
-        parentPath = dragSrcEl.parentElement.getAttribute('jsonpath') + ".";
+        var parentPath = dragSrcEl.parentElement.getAttribute('jsonpath') + ".";
         if (parentPath === "null.") {
           parentPath = "";
         }
@@ -437,6 +437,20 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         newSubMenu.addEventListener('drop', handleDrop, false);
         newSubMenu.addEventListener('dragend', handleDragEnd, false);
 
+        var collapsableSpan = document.createElement('span');
+        collapsableSpan.style = "margin-right:10px;cursor:pointer;font-size:14px;";
+        collapsableSpan.innerHTML = "+";
+        collapsableSpan.onclick = function() {
+          if (this.innerHTML === "+") {
+            this.innerHTML = "−";
+            this.parentElement.lastChild.style="";
+          } else {
+            this.innerHTML = "+";
+            this.parentElement.lastChild.style="display:none;";
+          }
+        };
+        newSubMenu.appendChild(collapsableSpan);
+
         var deleteButton = document.createElement('button');
         deleteButton.innerHTML = "Del";
         deleteButton.onclick = function() {
@@ -486,23 +500,24 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
         var newLabel = document.createElement('label');
         newLabel.htmlFor = key;
-        newLabel.innerHTML = key + " ↓";
+        newLabel.innerHTML = key + " →";
         newLabel.classList = "bmAnchors";
-        newLabel.onclick = function() {
-          if (this.nextSibling.style.display === "") {
-            this.innerHTML = key + " →";
-            this.nextSibling.style="display: none;";
-          } else {
-            this.innerHTML = key + " ↓";
-            this.nextSibling.style="";
-          }
-        };
+        // newLabel.onclick = function() {
+        //   if (this.nextSibling.style.display === "") {
+        //     this.innerHTML = key + " →";
+        //     this.nextSibling.style="display: none;";
+        //   } else {
+        //     this.innerHTML = key + " ↓";
+        //     this.nextSibling.style="";
+        //   }
+        // };
         newLabel.setAttribute('jsonpath', keyItem);
         newSubMenu.appendChild(newLabel);
 
         var newSubMenuUl = document.createElement('ul');
         newSubMenuUl.id = key + "_ul";
         newSubMenuUl.setAttribute('jsonpath', keyItem);
+        newSubMenuUl.style = "display:none;";
         // newSubMenuUl.draggable = "true";
         // newSubMenuUl.classList = "sortable-list";
         // newSubMenuUl.addEventListener('dragstart', handleDragStart, false);
@@ -636,7 +651,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     var curMenuItems = newMenuItems;
 
     // var curMenuItems = newMenuItems;
-    curFolder = "";
     for (var i = 0; i < allElements.length; i++) {
       var parentUl = allElements[i].parentElement.parentElement;
       var parentPath = parentUl.getAttribute('jsonpath');
