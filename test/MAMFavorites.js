@@ -64,7 +64,7 @@ function addMenuItems(parent, itemList) {
       newMenuItem.role = "none";
       var thisurl = itemList[key];
       var target = "";
-      if (itemList[key].match(/http.:/) && !(itemList[key].match(/(myanonamouse.net)/))) {
+      if (itemList[key].match(/http.*:/) && !(itemList[key].match(/(myanonamouse.net)/))) {
         target = 'target="_blank"';
         // thisurl = "https://r.mrd.ninja/" + itemList[key];
       }
