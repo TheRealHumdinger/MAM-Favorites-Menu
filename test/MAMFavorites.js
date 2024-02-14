@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.6.0alpha
+// @version 0.6.0alpha.p1
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -170,7 +170,7 @@ addFaveAnchor.onclick = function() {
   folderInput.id = "folderInput";
   folderInput.style = "border-radius: 4px;width:356px;";
   var folderOption = document.createElement('option');
-  folderOption.value = "";
+  folderOption.value = "No Folder";
   folderOption.innerHTML = "No Folder";
   folderInput.appendChild(folderOption);
   for (const key in menuItems) {
