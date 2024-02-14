@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.6.0alpha.p2
+// @version 0.6.1
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
