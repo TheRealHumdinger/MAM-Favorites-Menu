@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.5.8
+// @version 0.6.1
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -40,7 +40,11 @@ function addMenuItems(parent, itemList) {
     if ( typeof itemList[key] === 'object') {
       var newSubMenu = document.createElement('li');
       newSubMenu.role = "none";
-      newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false">' + key + ' →</a>';
+      if (subMenuDirection === "right") {
+        newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false" style="cursor:pointer;">' + key + ' →</a>';
+      } else {
+        newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false" style="cursor:pointer;">← ' + key + '</a>';
+      }
 
       var newSubMenuUl = document.createElement('ul');
       newSubMenuUl.role = "menu";
@@ -50,7 +54,7 @@ function addMenuItems(parent, itemList) {
 
       // Recursively call addMenuItems to loop through the submenu items and add them to the submenu
       addMenuItems(newSubMenuUl, itemList[key]);
-  
+
       newSubMenu.appendChild(newSubMenuUl);
       parent.appendChild(newSubMenu);
     } else {
@@ -59,10 +63,12 @@ function addMenuItems(parent, itemList) {
       var newMenuItem = document.createElement('li');
       newMenuItem.role = "none";
       var thisurl = itemList[key];
-      if (itemList[key].includes("http") && !(itemList[key].match(/(myanonamouse.net|localhost|192.168)/))) {
-        thisurl = "https://r.mrd.ninja/" + itemList[key];
+      var target = "";
+      if (itemList[key].match(/http.*:/) && !(itemList[key].match(/(myanonamouse.net)/))) {
+        target = 'target="_blank"';
+        // thisurl = "https://r.mrd.ninja/" + itemList[key];
       }
-      newMenuItem.innerHTML = '<a role="menuitem" href="' + thisurl + '">' + key + '</a>';
+      newMenuItem.innerHTML = '<a role="menuitem" href="' + thisurl + '" ' + target + '>' + key + '</a>';
       parent.appendChild(newMenuItem);
     }
   }
@@ -92,18 +98,135 @@ addFaveMenuElement.role = "none";
 // It will put the name of the favorite and the url into the sessionStorage and reload the page so the favorite can be added
 var addFaveAnchor = document.createElement('a');
 addFaveAnchor.role = "menuitem";
+addFaveAnchor.style = "cursor: pointer;";
 addFaveAnchor.tabindex = "0";
 addFaveAnchor.id = "addFave";
 addFaveAnchor.innerHTML = "Add Fave";
 addFaveAnchor.onclick = function() {
-  var newBMName = prompt('Give a name for the favorite', document.title);
-  if (!(newBMName === null) && !(newBMName === "")) {
-    var bookmark = window.location.pathname + window.location.search;
-    menuItems[newBMName] = bookmark;
-    GM_setValue('MAMFaves_favorites', menuItems);
+  // Create a modal element
+  var modal = document.createElement('div');
+  modal.style = "position: fixed;top: 0;left: 0;width: 100%;height: 100%;background-color: rgba(0,0,0,0.5);z-index: 1000;";
+  // modal.classList.add('modal');
 
-    window.location.reload();
+  // Create the modal content
+  var modalContent = document.createElement('div');
+  modalContent.style = "position: absolute;top: 50%;left: 50%;transform: translate(-50%, -50%);background-color: #fefefe;padding: 20px;border: 1px solid #888;display: flex;flex-direction: column;align-items: center;";
+  // modalContent.classList.add('modal-content');
+
+  var modalClose = document.createElement('span');
+  modalClose.style = "position: absolute;top: 0;right: 0;padding-right: 2px;font-size: 24px;cursor: pointer;";
+  modalClose.innerHTML = "&times;";
+  modalClose.onclick = function() {
+    document.body.removeChild(modal);
+  };
+  modalContent.appendChild(modalClose);
+
+  var modalTitle = document.createElement('h2');
+  modalTitle.innerHTML = "Add Favorite";
+  modalContent.appendChild(modalTitle);
+
+  var divElement = document.createElement('div');
+  divElement.style = "display: flex; flex-direction: row;";
+
+  var nameLabel = document.createElement('label');
+  nameLabel.innerHTML = "Name";
+  nameLabel.style = "width: 40px;padding-top:3px;";
+  divElement.appendChild(nameLabel);
+
+  // Create input fields for name, URL, and folder
+  var nameInput = document.createElement('input');
+  nameInput.style = "border-radius: 4px;width:350px;"
+  nameInput.type = 'text';
+  nameInput.value = document.title;
+  divElement.appendChild(nameInput);
+  modalContent.appendChild(divElement);
+
+  var divElement2 = document.createElement('div');
+  divElement2.style = "display: flex; flex-direction: row;";
+
+  var urlLabel = document.createElement('label');
+  urlLabel.innerHTML = "URL";
+  urlLabel.style = "width: 40px;padding-top:3px;";
+  divElement2.appendChild(urlLabel);
+
+  var urlInput = document.createElement('input');
+  urlInput.style = "border-radius: 4px;width:350px;"
+  urlInput.type = 'text';
+  urlInput.value = window.location.pathname + window.location.search;
+  divElement2.appendChild(urlInput);
+  modalContent.appendChild(divElement2);
+
+  // var folderInput = document.createElement('input');
+  // folderInput.type = 'text';
+  // folderInput.placeholder = 'Folder';
+
+  var divElement3 = document.createElement('div');
+  divElement3.style = "display: flex; flex-direction: row;";
+  var folderLabel = document.createElement('label');
+  folderLabel.innerHTML = "Folder";
+  folderLabel.style = "width: 40px;padding-top:3px;";
+  divElement3.appendChild(folderLabel);
+
+  var folderInput = document.createElement('select');
+  folderInput.id = "folderInput";
+  folderInput.style = "border-radius: 4px;width:356px;";
+  var folderOption = document.createElement('option');
+  folderOption.value = "No Folder";
+  folderOption.innerHTML = "No Folder";
+  folderInput.appendChild(folderOption);
+  for (const key in menuItems) {
+    if ( typeof menuItems[key] === 'object') {
+      var newSubMenu = document.createElement('option');
+      newSubMenu.value = key;
+      newSubMenu.innerHTML = key;
+      folderInput.appendChild(newSubMenu);
+    }
   }
+  divElement3.appendChild(folderInput);
+  modalContent.appendChild(divElement3);
+
+  // Create a button to submit the form
+  var submitButton = document.createElement('button');
+  submitButton.textContent = 'Add Favorite';
+
+  // Append the input fields and button to the modal content
+  modalContent.appendChild(submitButton);
+
+  // Append the modal content to the modal
+  modal.appendChild(modalContent);
+
+  // Append the modal to the document body
+  document.body.appendChild(modal);
+
+  // Function to handle form submission
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    var newBMName = nameInput.value;
+    var newBMLink = urlInput.value;
+    var newBMFolder = folderInput.value;
+
+    if (newBMName && newBMLink && newBMFolder) {
+      // Add the new favorite to the menuItems object
+      if (newBMFolder === "No Folder") {
+        menuItems[newBMName] = newBMLink;
+      } else {
+        if (menuItems[newBMFolder]) {
+          menuItems[newBMFolder][newBMName] = newBMLink;
+        }
+      }
+      GM_setValue('MAMFaves_favorites', menuItems);
+
+      // Reload the page
+      window.location.reload();
+    }
+
+    // Remove the modal from the document body
+    document.body.removeChild(modal);
+  }
+
+  // Add event listener to the submit button
+  submitButton.addEventListener('click', handleSubmit);
 };
 addFaveMenuElement.appendChild(addFaveAnchor);
 newMenuUl.appendChild(addFaveMenuElement);
@@ -260,7 +383,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
       if (dragSrcEl.classList.contains('sortable-list')) {
         // log("Last child: " + dragSrcEl.lastChild.id);
-        parentPath = dragSrcEl.parentElement.getAttribute('jsonpath') + ".";
+        var parentPath = dragSrcEl.parentElement.getAttribute('jsonpath') + ".";
         if (parentPath === "null.") {
           parentPath = "";
         }
@@ -431,6 +554,20 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         newSubMenu.addEventListener('drop', handleDrop, false);
         newSubMenu.addEventListener('dragend', handleDragEnd, false);
 
+        var collapsableSpan = document.createElement('span');
+        collapsableSpan.style = "margin-right:10px;cursor:pointer;font-size:14px;";
+        collapsableSpan.innerHTML = "+";
+        collapsableSpan.onclick = function() {
+          if (this.innerHTML === "+") {
+            this.innerHTML = "−";
+            this.parentElement.lastChild.style="";
+          } else {
+            this.innerHTML = "+";
+            this.parentElement.lastChild.style="display:none;";
+          }
+        };
+        newSubMenu.appendChild(collapsableSpan);
+
         var deleteButton = document.createElement('button');
         deleteButton.innerHTML = "Del";
         deleteButton.onclick = function() {
@@ -448,7 +585,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         deleteButton.style = "border-radius:4px;margin-right:5px;";
         deleteButton.setAttribute('jsonpath', keyItem);
         newSubMenu.appendChild(deleteButton);
-        
+
         var renameButton = document.createElement('button');
         renameButton.innerHTML = "Ren";
         renameButton.onclick = function() {
@@ -468,7 +605,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
             var lastOne = lastOne[jsonpath[i]];
           }
         };
-        
+
         renameButton.style = "border-radius:4px;margin-right:5px;";
         renameButton.setAttribute('jsonpath', keyItem);
         newSubMenu.appendChild(renameButton);
@@ -482,12 +619,22 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         newLabel.htmlFor = key;
         newLabel.innerHTML = key + " →";
         newLabel.classList = "bmAnchors";
+        // newLabel.onclick = function() {
+        //   if (this.nextSibling.style.display === "") {
+        //     this.innerHTML = key + " →";
+        //     this.nextSibling.style="display: none;";
+        //   } else {
+        //     this.innerHTML = key + " ↓";
+        //     this.nextSibling.style="";
+        //   }
+        // };
         newLabel.setAttribute('jsonpath', keyItem);
         newSubMenu.appendChild(newLabel);
 
         var newSubMenuUl = document.createElement('ul');
         newSubMenuUl.id = key + "_ul";
         newSubMenuUl.setAttribute('jsonpath', keyItem);
+        newSubMenuUl.style = "display:none;";
         // newSubMenuUl.draggable = "true";
         // newSubMenuUl.classList = "sortable-list";
         // newSubMenuUl.addEventListener('dragstart', handleDragStart, false);
@@ -496,7 +643,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
         // newSubMenuUl.addEventListener('dragleave', handleDragLeave, false);
         // newSubMenuUl.addEventListener('drop', handleDrop, false);
         // newSubMenuUl.addEventListener('dragend', handleDragEnd, false);
-        
+
         addFavoriteItem(newSubMenuUl, keyItem, itemList[key]);
         newSubMenu.appendChild(newSubMenuUl);
         parent.appendChild(newSubMenu);
@@ -526,10 +673,10 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
           GM_setValue('MAMFaves_favorites', menuItems);
           window.location.reload();
         };
-        deleteButton.style = "border-radius:4px;margin-right:5px;";
+        deleteButton.style = "border-radius:4px;margin-right:5px;margin-left:18px;";
         deleteButton.setAttribute('jsonpath', keyItem);
         newLi.appendChild(deleteButton);
-        
+
         var renameButton = document.createElement('button');
         renameButton.innerHTML = "Ren";
         renameButton.onclick = function() {
@@ -560,7 +707,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
 
         var newA = document.createElement('a');
         newA.classList = "bmAnchors";
-        console.log(itemList[key]);
         var thisurl = itemList[key];
         if (thisurl.includes("http")) {
           newA.href = thisurl;
@@ -622,7 +768,6 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     var curMenuItems = newMenuItems;
 
     // var curMenuItems = newMenuItems;
-    curFolder = "";
     for (var i = 0; i < allElements.length; i++) {
       var parentUl = allElements[i].parentElement.parentElement;
       var parentPath = parentUl.getAttribute('jsonpath');
@@ -637,7 +782,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       }
 
       var bmName = allElements[i].innerHTML;
-      if (bmName.includes("→")) {
+      if (bmName.includes("→") || bmName.includes("↓")) {
         bmName = bmName.substring(0, bmName.length - 2);
         curMenuItems[bmName] = {};
       } else {
@@ -744,7 +889,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       }
     }
     importModalContent.appendChild(importModalButton);
-    
+
     var importModalOpenFileButton = document.createElement('button');
     importModalOpenFileButton.innerHTML = "Open File";
     importModalOpenFileButton.onclick = function() {
@@ -765,7 +910,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     importModal.appendChild(importModalContent);
     document.body.appendChild(importModal);
   };
-  
+
   // Append the Import JSON button to the favorites table cell
   favesTd2.appendChild(importButton);
   // Adds whitespace after the Import JSON button to separate it from the other buttons
@@ -852,7 +997,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   indicatorLabel.id = "indicatorLabel";
   indicatorLabel.style = "margin-left: 5px;color: red;";
   favesTd2.appendChild(indicatorLabel);
-  
+
   // Add an hr separator to the page to separate the delete button from the other buttons to prevent accidental clicks
   var hrElement = document.createElement('hr');
   hrElement.style = "width: 200px;margin-left:5px;text-align: left;";
