@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.6.0alpha.p1
+// @version 0.6.0alpha.p2
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -41,9 +41,9 @@ function addMenuItems(parent, itemList) {
       var newSubMenu = document.createElement('li');
       newSubMenu.role = "none";
       if (subMenuDirection === "right") {
-        newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false">' + key + ' →</a>';
+        newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false" style="cursor:pointer;">' + key + ' →</a>';
       } else {
-        newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false">← ' + key + '</a>';
+        newSubMenu.innerHTML = '<a tabindex="0" id="' + key + '" aria-haspopup="true" aria-expanded="false" style="cursor:pointer;">← ' + key + '</a>';
       }
 
       var newSubMenuUl = document.createElement('ul');
@@ -98,6 +98,7 @@ addFaveMenuElement.role = "none";
 // It will put the name of the favorite and the url into the sessionStorage and reload the page so the favorite can be added
 var addFaveAnchor = document.createElement('a');
 addFaveAnchor.role = "menuitem";
+addFaveAnchor.style = "cursor: pointer;";
 addFaveAnchor.tabindex = "0";
 addFaveAnchor.id = "addFave";
 addFaveAnchor.innerHTML = "Add Fave";
