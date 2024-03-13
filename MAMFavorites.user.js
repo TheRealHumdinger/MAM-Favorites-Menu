@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.6.1
+// @version 0.6.2
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -36,8 +36,10 @@ function log(message) {
 // Create menu items and submenus/items
 // Called recursively to create submenus and their items
 function addMenuItems(parent, itemList) {
+  log("Adding menu items");
   for (const key in itemList) {
     if ( typeof itemList[key] === 'object') {
+      log("Adding submenu: " + key);
       var newSubMenu = document.createElement('li');
       newSubMenu.role = "none";
       if (subMenuDirection === "right") {
@@ -60,6 +62,7 @@ function addMenuItems(parent, itemList) {
     } else {
       // If the menu item is not an object then it's a regular menu item
       // So we add it as a list item
+      log("Adding menu item: " + key);
       var newMenuItem = document.createElement('li');
       newMenuItem.role = "none";
       var thisurl = itemList[key];
@@ -152,7 +155,7 @@ addFaveAnchor.onclick = function() {
   var urlInput = document.createElement('input');
   urlInput.style = "border-radius: 4px;width:350px;"
   urlInput.type = 'text';
-  urlInput.value = window.location.pathname + window.location.search;
+  urlInput.value = window.location.pathname + window.location.search + window.location.hash;
   divElement2.appendChild(urlInput);
   modalContent.appendChild(divElement2);
 
