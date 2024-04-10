@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.6.2
+// @version 0.6.3
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -337,7 +337,20 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       } else if (this.classList.contains('sortable-list')) {
         // Highlight the target element (folder)
         this.classList.add('over');
-        this.style = "border: 2px solid #999;";
+        // Determine mouse position relative to the target element
+        const rect = this.getBoundingClientRect();
+        const relY = e.clientY - rect.top;
+
+        // This determines and sets the border style for the target element to show where the item would be dropped
+        if (relY < rect.height / 3) {
+          // Highlight above the target element
+          this.style = "border-top: 2px solid #999;";
+        } else if (relY > rect.height * 2 / 3) {
+          // Highlight below the target element
+          this.style = "border-bottom: 2px solid #999;";
+        } else {
+          this.style = "border: 2px solid #999;";
+        }
       }
     }
   }
@@ -380,8 +393,21 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
           this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
         }
       } else if (this.classList.contains('sortable-list')) {
-        // Insert the dragged element into the target element (folder)
-        this.lastChild.appendChild(dragSrcEl);
+        // Determine mouse position relative to the target element
+        const rect = this.getBoundingClientRect();
+        const relY = e.clientY - rect.top;
+
+        // This determines and sets the border style for the target element to show where the item would be dropped
+        if (relY < rect.height / 3) {
+          // Insert before the target element
+          this.parentNode.insertBefore(dragSrcEl, this);
+        } else if (relY > rect.height * 2 / 3) {
+          // Insert after the target element
+          this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+        } else {
+          // Insert the dragged element into the target element (folder)
+          this.lastChild.appendChild(dragSrcEl);
+        }
       }
 
       if (dragSrcEl.classList.contains('sortable-list')) {
