@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.6.1
+// @version 0.6.3
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -36,8 +36,10 @@ function log(message) {
 // Create menu items and submenus/items
 // Called recursively to create submenus and their items
 function addMenuItems(parent, itemList) {
+  log("Adding menu items");
   for (const key in itemList) {
     if ( typeof itemList[key] === 'object') {
+      log("Adding submenu: " + key);
       var newSubMenu = document.createElement('li');
       newSubMenu.role = "none";
       if (subMenuDirection === "right") {
@@ -60,6 +62,7 @@ function addMenuItems(parent, itemList) {
     } else {
       // If the menu item is not an object then it's a regular menu item
       // So we add it as a list item
+      log("Adding menu item: " + key);
       var newMenuItem = document.createElement('li');
       newMenuItem.role = "none";
       var thisurl = itemList[key];
@@ -152,7 +155,7 @@ addFaveAnchor.onclick = function() {
   var urlInput = document.createElement('input');
   urlInput.style = "border-radius: 4px;width:350px;"
   urlInput.type = 'text';
-  urlInput.value = window.location.pathname + window.location.search;
+  urlInput.value = window.location.pathname + window.location.search + window.location.hash;
   divElement2.appendChild(urlInput);
   modalContent.appendChild(divElement2);
 
@@ -334,7 +337,20 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
       } else if (this.classList.contains('sortable-list')) {
         // Highlight the target element (folder)
         this.classList.add('over');
-        this.style = "border: 2px solid #999;";
+        // Determine mouse position relative to the target element
+        const rect = this.getBoundingClientRect();
+        const relY = e.clientY - rect.top;
+
+        // This determines and sets the border style for the target element to show where the item would be dropped
+        if (relY < rect.height / 3) {
+          // Highlight above the target element
+          this.style = "border-top: 2px solid #999;";
+        } else if (relY > rect.height * 2 / 3) {
+          // Highlight below the target element
+          this.style = "border-bottom: 2px solid #999;";
+        } else {
+          this.style = "border: 2px solid #999;";
+        }
       }
     }
   }
@@ -377,8 +393,21 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
           this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
         }
       } else if (this.classList.contains('sortable-list')) {
-        // Insert the dragged element into the target element (folder)
-        this.lastChild.appendChild(dragSrcEl);
+        // Determine mouse position relative to the target element
+        const rect = this.getBoundingClientRect();
+        const relY = e.clientY - rect.top;
+
+        // This determines and sets the border style for the target element to show where the item would be dropped
+        if (relY < rect.height / 3) {
+          // Insert before the target element
+          this.parentNode.insertBefore(dragSrcEl, this);
+        } else if (relY > rect.height * 2 / 3) {
+          // Insert after the target element
+          this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+        } else {
+          // Insert the dragged element into the target element (folder)
+          this.lastChild.appendChild(dragSrcEl);
+        }
       }
 
       if (dragSrcEl.classList.contains('sortable-list')) {
