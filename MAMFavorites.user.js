@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.6.3
+// @version 0.7.5
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -18,6 +18,7 @@
 // Get settings from GM storage
 var debug = GM_getValue("MAMFaves_debug", false);
 var menuTitle = GM_getValue("MAMFaves_menuTitle", "Favorites");
+var customButtons = GM_getValue("MAMFaves_customButtons", "");
 var subMenuDirection = GM_getValue("MAMFaves_subMenuDirection", "right");
 var menuItems = GM_getValue("MAMFaves_favorites", { "Howto use MAM Favorites": "https://www.myanonamouse.net/f/t/75447"});
 var logPrefix = "[MAMFaveMenu] ";
@@ -75,6 +76,27 @@ function addMenuItems(parent, itemList) {
       parent.appendChild(newMenuItem);
     }
   }
+}
+
+// Function to get all the folders in the menuItems object
+// This is used to populate the folder selector on the Add Favorite modal
+function getFolders(menuItems, parent = 'root') {
+  var folders = [];
+  newroot = "";
+  for (const key in menuItems) {
+    if ( typeof menuItems[key] === 'object') {
+      if (parent == 'root') {
+        folders.push(key);
+        newroot = key;
+      } else {
+        folders.push(parent + '.' + key);
+        newroot = parent + '.' + key;
+      }
+
+      folders = folders.concat(getFolders(menuItems[key], newroot));
+    }
+  }
+  return folders;
 }
 
 // Top list item (li) for the menu
@@ -177,14 +199,14 @@ addFaveAnchor.onclick = function() {
   folderOption.value = "No Folder";
   folderOption.innerHTML = "No Folder";
   folderInput.appendChild(folderOption);
-  for (const key in menuItems) {
-    if ( typeof menuItems[key] === 'object') {
-      var newSubMenu = document.createElement('option');
-      newSubMenu.value = key;
-      newSubMenu.innerHTML = key;
-      folderInput.appendChild(newSubMenu);
-    }
-  }
+
+  getFolders(menuItems).forEach(function(value) {
+    var newOption = document.createElement('option');
+    newOption.value = value;
+    newOption.innerHTML = value;
+    folderInput.appendChild(newOption);
+  });
+
   divElement3.appendChild(folderInput);
   modalContent.appendChild(divElement3);
 
@@ -214,9 +236,12 @@ addFaveAnchor.onclick = function() {
       if (newBMFolder === "No Folder") {
         menuItems[newBMName] = newBMLink;
       } else {
-        if (menuItems[newBMFolder]) {
-          menuItems[newBMFolder][newBMName] = newBMLink;
+        var curMenuItems = menuItems;
+        folders = newBMFolder.split('.');
+        for (var j = 0; j < folders.length; j++) {
+            curMenuItems = curMenuItems[folders[j]];
         }
+        curMenuItems[newBMName] = newBMLink;
       }
       GM_setValue('MAMFaves_favorites', menuItems);
 
@@ -258,6 +283,33 @@ newMenuElement.appendChild(newMenuUl);
 document.getElementById("menu").appendChild(newMenuElement);
 // End of adding new menu
 //#endregion Add new menu
+
+if ( window.location.toString().includes("https://www.myanonamouse.net/tor/browse.php")) {
+    //alert("Torrents page");
+    // Add custom buttoms to the torrents page
+    // Need button text, folder, bmName
+
+    // '[{"text":"Set FL CurPage","folder":"Searches","bmName":"Freeleech CurPage"}, {"text":"Save Search","folder":"Searches","bmName":"Saved Search"}]'
+    // var buttonsJson = JSON.parse(customButtons);
+    for (var i = customButtons.length - 1; i >= 0; i--) {
+      var addBMButton = document.createElement("button");
+      addBMButton.textContent = customButtons[i].text;
+      addBMButton.setAttribute('newBMFolder', customButtons[i].folder);
+      addBMButton.setAttribute('newBMName', customButtons[i].bmName);
+      addBMButton.onclick = function() {
+          var CurrFLPageURL = window.location.pathname + window.location.search + window.location.hash;
+          var folders = this.getAttribute('newBMFolder').split('.');
+          var curMenuItems = menuItems;
+          for (var j = 0; j < folders.length; j++) {
+              curMenuItems = curMenuItems[folders[j]];
+          }
+          curMenuItems[this.getAttribute('newBMName')] = CurrFLPageURL;
+          GM_setValue('MAMFaves_favorites', menuItems);
+      };
+      const srchControl = document.getElementById("torSearchControl");
+      srchControl.parentNode.insertBefore(addBMButton, srchControl.parentNode.children[4]);
+    }
+}
 
 // Inject the remove favorites script needed for the preferences page (only)
 // It also includes the event listener scripts for handling the drag and drop functionality
@@ -469,6 +521,9 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
    <li class='bullets'>Import the raw json to restore favorites</li>
    <li class='bullets'>Delete all your favorites to simply start over</li>
    <br />
+   <strong>Custom Buttons</strong> are buttons that will be added above the torrent browse pages for quick save actions.<br />
+   Each one requires button text, folder where it will be saved, and a name for the bookmark.<br />
+   <br />
    <strong>NOTE:</strong> The favorites are stored in your browser's local storage and are not shared between devices or browsers. If you clear your browser's local storage, you will lose your favorites.<br />
    You can read more about all of this in the <a href="https://www.myanonamouse.net/f/t/75447">Forum Post</a>.<br />`;
 
@@ -561,7 +616,144 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   mainTbody.appendChild(prefsTr);
 //#endregion Second Table Row - Preferences
 
-//#region Third Table Row - Favorites
+//#region Third Table Row - Custom Buttons
+  // Create the third table row for the main table
+  var customButtonsTr = document.createElement('tr');
+
+  // Create the first table cell for the custom buttons table row
+  // This identifies the row as being for the custom buttons
+  var customButtonsTd1 = document.createElement('td');
+  customButtonsTd1.classList = "row2";
+  customButtonsTd1.style = "text-align: left;width: 150px;";
+  customButtonsTd1.innerHTML = "Custom Buttons";
+
+  // Create the second table cell for the custom buttons table row
+  // This contains the actual custom buttons available to the user
+  var customButtonsTd2 = document.createElement('td');
+  customButtonsTd2.classList = "row1";
+  customButtonsTd2.id = "customButtonsTd";
+
+  for (var i = 0; i < customButtons.length; i++) {
+    // console.log(customButtons[i]);
+
+    var newNameDiv = document.createElement('div');
+    newNameDiv.setAttribute('name', "customButtons");
+    // newNameDiv.style = "display: flex; flex-direction: row;";
+    newNameDiv.style = "margin-bottom: 5px;";
+    var nameTextLabel = document.createElement('label');
+    nameTextLabel.innerHTML = "Button Text";
+    // nameTextLabel.style = "width: 40px;padding-top:3px;padding-right:5px;";
+    nameTextLabel.style = "width: 40px;padding:3px;";
+
+    var nameTextbox = document.createElement('input');
+    nameTextbox.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
+    nameTextbox.type = "text";
+    nameTextbox.value = customButtons[i].text;
+    newNameDiv.appendChild(nameTextLabel);
+    newNameDiv.appendChild(nameTextbox);
+
+    // var newFolderDiv = document.createElement('div');
+    var folderTextLabel = document.createElement('label');
+    folderTextLabel.innerHTML = "Folder";
+    // folderTextLabel.style = "width: 40px;padding-top:3px;padding-right:5px;";
+    folderTextLabel.style = "width: 40px;padding:3px;";
+
+    var folderTextbox = document.createElement('input');
+    folderTextbox.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
+    folderTextbox.type = "text";
+    folderTextbox.value = customButtons[i].folder;
+    newNameDiv.appendChild(folderTextLabel);
+    newNameDiv.appendChild(folderTextbox);
+
+    // var newBMNameDiv = document.createElement('div');
+    var bmNameTextLabel = document.createElement('label');
+    bmNameTextLabel.innerHTML = "Bookmark Name";
+    // bmNameTextLabel.style = "width: 40px;padding-top:3px;padding-right:5px;";
+    bmNameTextLabel.style = "width: 40px;padding:3px;";
+
+    var bmNameTextbox = document.createElement('input');
+    bmNameTextbox.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
+    bmNameTextbox.type = "text";
+    bmNameTextbox.value = customButtons[i].bmName;
+    newNameDiv.appendChild(bmNameTextLabel);
+    newNameDiv.appendChild(bmNameTextbox);
+
+    var removeImg = document.createElement('img');
+    removeImg.src = "/pic/minus.gif";
+    // removeImg.style = "cursor: pointer;";
+    removeImg.onclick = function() {
+      this.parentElement.remove();
+    };
+    newNameDiv.appendChild(removeImg);
+
+    customButtonsTd2.appendChild(newNameDiv);
+    // customButtonsTd2.appendChild(newFolderDiv);
+    // customButtonsTd2.appendChild(newBMNameDiv);
+  }
+
+  customButtonsTr.appendChild(customButtonsTd1);
+  customButtonsTr.appendChild(customButtonsTd2);
+  mainTbody.appendChild(customButtonsTr);
+
+  // var newButtonDiv = document.createElement('div');
+  // newButtonDiv.style = "display: flex; flex-direction: row;";
+  var newButton = document.createElement('button');
+  newButton.innerHTML = "Add Button";
+  newButton.onclick = function() {
+    var newNameDiv = document.createElement('div');
+    newNameDiv.setAttribute('name', "customButtons");
+    newNameDiv.style = "margin-bottom: 5px;";
+    var nameTextLabel = document.createElement('label');
+    nameTextLabel.innerHTML = "Button Text";
+    nameTextLabel.style = "width: 40px;padding:3px;";
+    var nameTextbox = document.createElement('input');
+    nameTextbox.type = "text";
+    nameTextbox.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
+    newNameDiv.appendChild(nameTextLabel);
+    newNameDiv.appendChild(nameTextbox);
+
+    var folderTextLabel = document.createElement('label');
+    folderTextLabel.innerHTML = "Folder";
+    folderTextLabel.style = "width: 40px;padding:3px;";
+    var folderTextbox = document.createElement('input');
+    folderTextbox.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
+    folderTextbox.type = "text";
+    newNameDiv.appendChild(folderTextLabel);
+    newNameDiv.appendChild(folderTextbox);
+
+    var bmNameTextLabel = document.createElement('label');
+    bmNameTextLabel.innerHTML = "Bookmark Name";
+    bmNameTextLabel.style = "width: 40px;padding:3px;";
+    var bmNameTextbox = document.createElement('input');
+    bmNameTextbox.onchange = function() { document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!"; };
+    bmNameTextbox.type = "text";
+    newNameDiv.appendChild(bmNameTextLabel);
+    newNameDiv.appendChild(bmNameTextbox);
+
+    var removeImg = document.createElement('img');
+    removeImg.src = "/pic/minus.gif";
+    // removeImg.style = "cursor: pointer;";
+    removeImg.onclick = function() {
+      this.parentElement.remove();
+    };
+    newNameDiv.appendChild(removeImg);
+
+    customButtonsTd2.insertBefore(newNameDiv, customButtonsTd2.lastChild);
+  }
+  customButtonsTd2.appendChild(newButton);
+  // newNameDiv.appendChild(newButtonDiv);
+
+  // Add the observer to the custom buttons section
+  // This is to detect when changes are made to the custom buttons
+  // When changes are made, the observer will change the indicator label to remind the user to click update
+  // onChange events on the inputs will also change the indicator label
+  const observer = new MutationObserver((mutationsList, observer) => {
+    document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!";
+  });
+  observer.observe(customButtonsTd2, { subtree: true, childList: true });
+//#endregion Third Table Row - Custom Buttons  
+
+//#region Forth Table Row - Favorites
   // Function to add a favorite items and containing folders to the page
   function addFavoriteItem(parent, parentItem, itemList) {
     for (const key in itemList) {
@@ -827,6 +1019,23 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     GM_setValue('MAMFaves_debug', document.getElementById('debugCB').checked == true);
     GM_setValue('MAMFaves_menuTitle', document.getElementById('menuTitle').value);
     GM_setValue('MAMFaves_subMenuDirection', document.getElementById('subMenuDirection').value);
+
+    // Custom buttons requires a different approach
+    // Get all the custom button divs and loop through them to get the values
+    // Put them into a JSON Array and save them to GM storage
+    var customButtonDivs = document.getElementsByName('customButtons');
+    var customButtonsArr = [];
+    console.log(customButtonDivs.length);
+
+    for (i = 0; i < customButtonDivs.length; i++) {
+      var customButton = {};
+      customButton.text = customButtonDivs[i].children[1].value;
+      customButton.folder = customButtonDivs[i].children[3].value;
+      customButton.bmName = customButtonDivs[i].children[5].value;
+      customButtonsArr.push(customButton);
+    }
+    console.log(customButtonsArr);
+    GM_setValue('MAMFaves_customButtons', customButtonsArr);
     window.location.reload();
   };
   // Append the update button to the favorites table cell
@@ -1056,7 +1265,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   favesTr.appendChild(favesTd2);
   // Append the favorites table row to the main table body
   mainTbody.appendChild(favesTr);
-//#endregion Third Table Row - Favorites
+//#endregion Forth Table Row - Favorites
 
   // Append the main table to the parent node
   myParent.appendChild(mainTable);
