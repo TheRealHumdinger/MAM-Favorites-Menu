@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.7.5
+// @version 0.7.6
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -298,10 +298,13 @@ if ( window.location.toString().includes("https://www.myanonamouse.net/tor/brows
       addBMButton.setAttribute('newBMName', customButtons[i].bmName);
       addBMButton.onclick = function() {
           var CurrFLPageURL = window.location.pathname + window.location.search + window.location.hash;
-          var folders = this.getAttribute('newBMFolder').split('.');
           var curMenuItems = menuItems;
-          for (var j = 0; j < folders.length; j++) {
+
+          if (this.getAttribute('newBMFolder') != "" && this.getAttribute('newBMFolder') != "No Folder" && this.getAttribute('newBMFolder') != "root") {
+            var folders = this.getAttribute('newBMFolder').split('.');
+            for (var j = 0; j < folders.length; j++) {
               curMenuItems = curMenuItems[folders[j]];
+            }
           }
           curMenuItems[this.getAttribute('newBMName')] = CurrFLPageURL;
           GM_setValue('MAMFaves_favorites', menuItems);
