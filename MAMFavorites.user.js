@@ -6,7 +6,7 @@
 // @icon https://cdn.myanonamouse.net/imagebucket/204586/MouseyIcon.png
 // @run-at       document-finish
 // @match        https://www.myanonamouse.net/*
-// @version 0.7.7
+// @version 0.8.1
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_deleteValue
@@ -21,6 +21,12 @@ var menuTitle = GM_getValue("MAMFaves_menuTitle", "Favorites");
 var customButtons = GM_getValue("MAMFaves_customButtons", "");
 var subMenuDirection = GM_getValue("MAMFaves_subMenuDirection", "right");
 var menuItems = GM_getValue("MAMFaves_favorites", { "Howto use MAM Favorites": "https://www.myanonamouse.net/f/t/75447"});
+var stickyMenu = GM_getValue("MAMFaves_stickyMenu", true);
+var altKeysEnabled = GM_getValue("MAMFaves_altKeysEnabled", false);
+var altKeysCtrl = GM_getValue("MAMFaves_altKeysCtrl", false);
+var altKeysAlt = GM_getValue("MAMFaves_altKeysAlt", true);
+var altKeysMeta = GM_getValue("MAMFaves_altKeysMeta", false);
+var altKeysKey = GM_getValue("MAMFaves_altKeysKey", 'z');
 var logPrefix = "[MAMFaveMenu] ";
 
 var cssDirection = "";
@@ -31,6 +37,27 @@ function log(message) {
   if (debug) {
     console.log(logPrefix + message);
   }
+}
+
+if (stickyMenu) {
+  // Make the menu sticky at the top of the page when scrolling
+  var menuDiv = document.getElementById("mainmenu");
+  menuDiv.style = "position: sticky;top: 0;z-index: 1000;width:0;margin:0 auto;";
+}
+
+if (altKeysEnabled == true && document.title == "Torrents page | My Anonamouse") {
+    document.addEventListener('keydown', function(event) {
+        if (event.altKey === altKeysAlt && event.ctrlKey === altKeysCtrl && event.metaKey == altKeysMeta && event.key === altKeysKey) {
+            const styleText = "position: fixed; width: 100%; top: 0px; left: 0px; z-index: 99998;";
+            const srchCtl = document.getElementById('torSearchControl');
+            //alert(srchCtl.style.cssText);
+            if (srchCtl.style.cssText == styleText) {
+                srchCtl.style = "position:inline-block";
+            } else {
+                srchCtl.style = styleText;
+            }
+        }
+    });
 }
 
 //#region Add new menu
@@ -308,6 +335,7 @@ if ( window.location.toString().includes("https://www.myanonamouse.net/tor/brows
           }
           curMenuItems[this.getAttribute('newBMName')] = CurrFLPageURL;
           GM_setValue('MAMFaves_favorites', menuItems);
+          this.textContent = this.textContent + ' (saved)';
       };
       const srchControl = document.getElementById("torSearchControl");
       srchControl.parentNode.insertBefore(addBMButton, srchControl.parentNode.children[4]);
@@ -572,6 +600,97 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
   prefsTd2.appendChild(debugLabel);
   prefsTd2.appendChild(document.createElement('br'));
 
+  // Create the stickyMenu checkbox and label
+  var stickyMenuPref = document.createElement('input');
+  stickyMenuPref.id = "stickyMenu";
+  stickyMenuPref.type = "checkbox";
+  stickyMenuPref.onchange = function() { stickyMenu = GM_setValue("MAMFaves_stickyMenu", this.checked); };
+  stickyMenuPref.checked = stickyMenu;
+
+  var stickyMenuLabel = document.createElement('label');
+  stickyMenuLabel.htmlFor = "stickyMenu";
+  stickyMenuLabel.innerHTML = "Sticky Menu";
+
+  // Append the stickyMenu checkbox and label to the preferences table cell
+  prefsTd2.appendChild(stickyMenuPref);
+  prefsTd2.appendChild(stickyMenuLabel);
+  prefsTd2.appendChild(document.createElement('br'));
+
+  // Create the altKeysEnabled checkbox and label
+  var enableAltKeysMenuPref = document.createElement('input');
+  enableAltKeysMenuPref.id = "enableAltKeys";
+  enableAltKeysMenuPref.type = "checkbox";
+  enableAltKeysMenuPref.onchange = function() { stickyMenu = GM_setValue("MAMFaves_altKeysEnabled", this.checked); };
+  enableAltKeysMenuPref.checked = altKeysEnabled;
+
+  var altKeysEnabledMenuLabel = document.createElement('label');
+  altKeysEnabledMenuLabel.htmlFor = "enableAltKeys";
+  altKeysEnabledMenuLabel.innerHTML = "Enable Key combo for Search Control stickyness";
+
+  // Append the altKeysEnabled checkbox and label to the preferences table cell
+  prefsTd2.appendChild(enableAltKeysMenuPref);
+  prefsTd2.appendChild(altKeysEnabledMenuLabel);
+  prefsTd2.appendChild(document.createElement('br'));
+
+  // Create the altKeys checkboxes and labels
+  // First add the label identifying what this is
+  var altKeysLabel = document.createElement('label');
+  altKeysLabel.innerHTML = 'Key Combo: ';
+  prefsTd2.appendChild(altKeysLabel);
+
+  // CTRL key checkbox and label
+  var altKeyCtrlCB = document.createElement('input');
+  altKeyCtrlCB.id = "altKeyCtrlCB";
+  altKeyCtrlCB.type = "checkbox";
+  altKeyCtrlCB.onchange = function() { stickyMenu = GM_setValue("MAMFaves_altKeysCtrl", this.checked); };
+  altKeyCtrlCB.checked = altKeysCtrl;
+
+  var altKeyCtrlCBLabel = document.createElement('label');
+  altKeyCtrlCBLabel.htmlFor = "altKeyCtrlCB";
+  altKeyCtrlCBLabel.innerHTML = "CTRL + ";
+
+  // ALT key checkbox and label
+  var altKeyAltCB = document.createElement('input');
+  altKeyAltCB.id = "altKeyAltCB";
+  altKeyAltCB.type = "checkbox";
+  altKeyAltCB.onchange = function() { stickyMenu = GM_setValue("MAMFaves_altKeysAlt", this.checked); };
+  altKeyAltCB.checked = altKeysAlt;
+
+  var altKeyAltCBLabel = document.createElement('label');
+  altKeyAltCBLabel.htmlFor = "altKeyAltCB";
+  altKeyAltCBLabel.innerHTML = "ALT + ";
+
+  // ALT key checkbox and label
+  var altKeyMetaCB = document.createElement('input');
+  altKeyMetaCB.id = "altKeyAltCB";
+  altKeyMetaCB.type = "checkbox";
+  altKeyMetaCB.onchange = function() { stickyMenu = GM_setValue("MAMFaves_altKeysMeta", this.checked); };
+  altKeyMetaCB.checked = altKeysMeta;
+
+  var altKeyMetaCBLabel = document.createElement('label');
+  altKeyMetaCBLabel.htmlFor = "altKeyMetaCB";
+  altKeyMetaCBLabel.innerHTML = "CMD (Mac) + ";
+
+  // Add box for single key to add to modifiers
+  var altKeyTB = document.createElement('input');
+  altKeyTB.id = "altKeyCB";
+  altKeyTB.type = "textbox";
+  altKeyTB.size = 1;
+  altKeyTB.maxLength = 1;
+  altKeyTB.value = altKeysKey;
+  altKeyTB.onchange = function() { if (this.value != "") { stickyMenu = GM_setValue("MAMFaves_altKeysKey", this.value); }};
+
+  // Append the altKeys checkboxes and label to the preferences table cell
+  prefsTd2.appendChild(altKeyCtrlCB);
+  prefsTd2.appendChild(altKeyCtrlCBLabel);
+  prefsTd2.appendChild(altKeyAltCB);
+  prefsTd2.appendChild(altKeyAltCBLabel);
+  prefsTd2.appendChild(altKeyMetaCB);
+  prefsTd2.appendChild(altKeyMetaCBLabel);
+  prefsTd2.appendChild(altKeyTB);
+
+  prefsTd2.appendChild(document.createElement('br'));
+
   // Create the input for the custom menu title
   var menuTitleInput = document.createElement('input');
   menuTitleInput.id = "menuTitle";
@@ -612,6 +731,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     subMenuDirectionSelect.appendChild(newOption);
   }
   prefsTd2.appendChild(subMenuDirectionSelect);
+  prefsTd2.appendChild(document.createElement('br'));
 
   // Append the preferences table cell to the preferences table row and table body
   prefsTr.appendChild(prefsTd1);
@@ -754,7 +874,7 @@ if ( window.location == "https://www.myanonamouse.net/preferences/index.php?view
     document.getElementById('indicatorLabel').innerHTML = "Unsaved changes, don't forget to click Update!";
   });
   observer.observe(customButtonsTd2, { subtree: true, childList: true });
-//#endregion Third Table Row - Custom Buttons  
+//#endregion Third Table Row - Custom Buttons
 
 //#region Forth Table Row - Favorites
   // Function to add a favorite items and containing folders to the page
